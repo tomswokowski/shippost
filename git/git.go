@@ -24,40 +24,45 @@ func GetRecentCommits(limit int) ([]Commit, error) {
 		return nil, fmt.Errorf("not a git repository")
 	}
 
-	// Get commits with format: hash|subject|body|author|timestamp
-	format := "%H|%s|%b|%an|%at"
+	// Get commits with format: hash|subject|author|timestamp
+	// Use %x00 (null byte) as record separator to handle multi-line content
+	// Skip body in the list view - we only need subject for display
+	format := "%H%x01%s%x01%an%x01%at%x00"
 	cmd := exec.Command("git", "log", fmt.Sprintf("-%d", limit), fmt.Sprintf("--format=%s", format), "--no-merges")
 	output, err := cmd.Output()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commits: %w", err)
 	}
 
-	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
-	if len(lines) == 0 || (len(lines) == 1 && lines[0] == "") {
+	// Split by null byte to get individual commits
+	records := strings.Split(strings.TrimSpace(string(output)), "\x00")
+	if len(records) == 0 || (len(records) == 1 && records[0] == "") {
 		return nil, fmt.Errorf("no commits found")
 	}
 
 	var commits []Commit
-	for _, line := range lines {
-		if line == "" {
+	for _, record := range records {
+		record = strings.TrimSpace(record)
+		if record == "" {
 			continue
 		}
 
-		parts := strings.SplitN(line, "|", 5)
-		if len(parts) < 5 {
+		// Split by unit separator (0x01)
+		parts := strings.Split(record, "\x01")
+		if len(parts) < 4 {
 			continue
 		}
 
 		var timestamp time.Time
-		if ts, err := parseUnixTimestamp(parts[4]); err == nil {
+		if ts, err := parseUnixTimestamp(parts[3]); err == nil {
 			timestamp = ts
 		}
 
 		commits = append(commits, Commit{
 			Hash:      parts[0][:7], // Short hash
 			Subject:   parts[1],
-			Body:      strings.TrimSpace(parts[2]),
-			Author:    parts[3],
+			Body:      "", // Body fetched separately if needed
+			Author:    parts[2],
 			Timestamp: timestamp,
 			Ago:       timeAgo(timestamp),
 		})
