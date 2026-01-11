@@ -10,7 +10,7 @@ import (
 )
 
 // version is set by goreleaser at build time
-var version = "0.0.1"
+var version = "dev"
 
 func main() {
 	// Define flags
