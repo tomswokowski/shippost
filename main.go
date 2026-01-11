@@ -49,6 +49,15 @@ func main() {
 		return
 	}
 
+	// Auto-run setup if no config exists
+	if !config.Exists() {
+		if err := config.RunSetup(); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Println()
+	}
+
 	// Launch TUI
 	if err := tui.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)

@@ -34,6 +34,16 @@ func configPath() (string, error) {
 	return filepath.Join(home, ".config", "shippost", "config.json"), nil
 }
 
+// Exists checks if a valid config file exists
+func Exists() bool {
+	path, err := configPath()
+	if err != nil {
+		return false
+	}
+	_, err = os.Stat(path)
+	return err == nil
+}
+
 // Load reads the config from disk
 func Load() (*Config, error) {
 	path, err := configPath()
@@ -190,7 +200,7 @@ func RunSetup() error {
 
 	path, _ := configPath()
 	fmt.Printf("\nConfig saved to %s\n", path)
-	fmt.Println("You're ready to post! Run: shippost")
+	fmt.Println("You're ready to post!")
 
 	return nil
 }
