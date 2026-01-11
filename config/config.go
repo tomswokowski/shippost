@@ -190,7 +190,7 @@ func RunSetup() error {
 
 	path, _ := configPath()
 	fmt.Printf("\nConfig saved to %s\n", path)
-	fmt.Println("You're ready to post! Try: shippost \"Hello from shippost!\"")
+	fmt.Println("You're ready to post! Run: shippost")
 
 	return nil
 }

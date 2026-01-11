@@ -11,6 +11,7 @@ Post to X from your terminal with AI-powered suggestions from your git commits.
   - Generate threads or single posts
 - **Thread support** - Create multi-post threads
 - **Media attachments** - Attach images to your posts
+- **Automatic theming** - Adapts to light or dark terminal backgrounds
 
 ## Installation
 
@@ -109,6 +110,10 @@ shippost --help
 - `Tab` - Focus prompt input
 - `ctrl+t` - Toggle single/thread mode
 - `Enter` - Generate post
+
+**Smart Post (Ask Mode):**
+- `ctrl+enter` - Submit question
+- `esc` - Back
 
 **Smart Post (Compose):**
 - `ctrl+s` - Send
