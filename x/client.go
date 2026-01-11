@@ -11,9 +11,16 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
+	"unicode/utf8"
 
 	"github.com/dghubble/oauth1"
 	"github.com/tomswokowski/shippost/config"
+)
+
+const (
+	// httpTimeout is the timeout for HTTP requests
+	httpTimeout = 30 * time.Second
 )
 
 const (
@@ -60,6 +67,9 @@ func NewClient(cfg *config.Config) *Client {
 	token := oauth1.NewToken(cfg.AccessToken, cfg.AccessSecret)
 	httpClient := oauthConfig.Client(oauth1.NoContext, token)
 
+	// Set timeout to prevent hanging on slow/unresponsive servers
+	httpClient.Timeout = httpTimeout
+
 	return &Client{
 		httpClient: httpClient,
 	}
@@ -72,12 +82,13 @@ func (c *Client) Post(text string) (*PostResponse, error) {
 
 // PostWithOptions creates a new post with additional options
 func (c *Client) PostWithOptions(text string, opts *PostOptions) (*PostResponse, error) {
-	// Validate post length
-	if len(text) == 0 {
+	// Validate post length using rune count for proper Unicode support
+	runeCount := utf8.RuneCountInString(text)
+	if runeCount == 0 {
 		return nil, fmt.Errorf("post text cannot be empty")
 	}
-	if len(text) > maxPostLength {
-		return nil, fmt.Errorf("post exceeds %d characters (%d)", maxPostLength, len(text))
+	if runeCount > maxPostLength {
+		return nil, fmt.Errorf("post exceeds %d characters (%d)", maxPostLength, runeCount)
 	}
 
 	// Build request body

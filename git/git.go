@@ -77,16 +77,6 @@ func GetRecentCommits(limit int) ([]Commit, error) {
 	return commits, nil
 }
 
-// GetCommitDiff returns the diff for a specific commit
-func GetCommitDiff(hash string) (string, error) {
-	cmd := exec.Command("git", "show", "--stat", hash)
-	output, err := cmd.Output()
-	if err != nil {
-		return "", fmt.Errorf("failed to get diff: %w", err)
-	}
-	return string(output), nil
-}
-
 func parseUnixTimestamp(s string) (time.Time, error) {
 	var ts int64
 	_, err := fmt.Sscanf(s, "%d", &ts)

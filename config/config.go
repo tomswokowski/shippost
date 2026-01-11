@@ -150,7 +150,8 @@ func RunSetup() error {
 	fmt.Println("shippost setup")
 	fmt.Println("==============")
 	fmt.Println("\nYou'll need X API credentials from developer.x.com")
-	fmt.Println("Create a project and app with Read+Write permissions.\n")
+	fmt.Println("Create a project and app with Read+Write permissions.")
+	fmt.Println()
 
 	reader := bufio.NewReader(os.Stdin)
 

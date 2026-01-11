@@ -9,288 +9,11 @@ import (
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/tomswokowski/shippost/ai"
 	"github.com/tomswokowski/shippost/config"
 	"github.com/tomswokowski/shippost/git"
 	"github.com/tomswokowski/shippost/x"
 )
-
-// Styles - initialized in init() based on terminal theme
-var (
-	titleStyle        lipgloss.Style
-	taglineStyle      lipgloss.Style
-	subtitleStyle     lipgloss.Style
-	menuItemStyle     lipgloss.Style
-	menuDescStyle     lipgloss.Style
-	selectedStyle     lipgloss.Style
-	selectedDescStyle lipgloss.Style
-	bulletStyle       lipgloss.Style
-	dimBulletStyle    lipgloss.Style
-	disabledStyle     lipgloss.Style
-	disabledTagStyle  lipgloss.Style
-	disabledDescStyle lipgloss.Style
-	helpBarStyle      lipgloss.Style
-	helpKeyStyle      lipgloss.Style
-	helpTextStyle     lipgloss.Style
-	statusStyle       lipgloss.Style
-	errorStyle        lipgloss.Style
-	warningStyle      lipgloss.Style
-	boxStyle          lipgloss.Style
-	activeBoxStyle    lipgloss.Style
-	urlStyle          lipgloss.Style
-	mediaTagStyle     lipgloss.Style
-	threadNumStyle    lipgloss.Style
-	dimStyle          lipgloss.Style
-	inputLabelStyle   lipgloss.Style
-	commitHashStyle   lipgloss.Style
-	commitTimeStyle   lipgloss.Style
-	aiTagStyle        lipgloss.Style
-)
-
-func init() {
-	// Detect terminal background and set appropriate colors
-	isDark := lipgloss.HasDarkBackground()
-	initStyles(isDark)
-}
-
-func initStyles(isDark bool) {
-	if isDark {
-		// Dark theme colors
-		titleStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("#FF6B6B"))
-
-		taglineStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#6B7280")).
-			Italic(true)
-
-		subtitleStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#E2E8F0")).
-			Bold(true)
-
-		menuItemStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#E2E8F0"))
-
-		menuDescStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#64748B")).
-			PaddingLeft(4)
-
-		selectedStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FFE66D")).
-			Bold(true)
-
-		selectedDescStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#A78BFA")).
-			PaddingLeft(4)
-
-		bulletStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FF6B6B")).
-			Bold(true)
-
-		dimBulletStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#475569"))
-
-		disabledStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#475569"))
-
-		disabledTagStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#334155")).
-			Background(lipgloss.Color("#1E293B")).
-			Padding(0, 1)
-
-		disabledDescStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#334155")).
-			PaddingLeft(4)
-
-		helpBarStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#64748B")).
-			Border(lipgloss.Border{Top: "─"}).
-			BorderForeground(lipgloss.Color("#334155")).
-			PaddingTop(1).
-			MarginTop(1)
-
-		helpKeyStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#0EA5E9")).
-			Background(lipgloss.Color("#0C4A6E")).
-			Padding(0, 1).
-			Bold(true)
-
-		helpTextStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#64748B"))
-
-		statusStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#10B981")).
-			Bold(true)
-
-		errorStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#EF4444")).
-			Bold(true)
-
-		warningStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#F59E0B"))
-
-		boxStyle = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("#334155")).
-			Padding(0, 1)
-
-		activeBoxStyle = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("#4ECDC4")).
-			Padding(0, 1)
-
-		urlStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#60A5FA")).
-			Underline(true)
-
-		mediaTagStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#10B981")).
-			Background(lipgloss.Color("#064E3B")).
-			Padding(0, 1)
-
-		threadNumStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#6366F1")).
-			Background(lipgloss.Color("#312E81")).
-			Padding(0, 1).
-			Bold(true)
-
-		dimStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#64748B"))
-
-		inputLabelStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#94A3B8"))
-
-		commitHashStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#95E6CB"))
-
-		commitTimeStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#A78BFA"))
-
-		aiTagStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#F472B6")).
-			Background(lipgloss.Color("#831843")).
-			Padding(0, 1).
-			Bold(true)
-	} else {
-		// Light theme colors
-		titleStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("#DC2626"))
-
-		taglineStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#6B7280")).
-			Italic(true)
-
-		subtitleStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#1F2937")).
-			Bold(true)
-
-		menuItemStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#1F2937"))
-
-		menuDescStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#6B7280")).
-			PaddingLeft(4)
-
-		selectedStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#B45309")).
-			Bold(true)
-
-		selectedDescStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#7C3AED")).
-			PaddingLeft(4)
-
-		bulletStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#DC2626")).
-			Bold(true)
-
-		dimBulletStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#9CA3AF"))
-
-		disabledStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#9CA3AF"))
-
-		disabledTagStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#9CA3AF")).
-			Background(lipgloss.Color("#F3F4F6")).
-			Padding(0, 1)
-
-		disabledDescStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#9CA3AF")).
-			PaddingLeft(4)
-
-		helpBarStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#6B7280")).
-			Border(lipgloss.Border{Top: "─"}).
-			BorderForeground(lipgloss.Color("#D1D5DB")).
-			PaddingTop(1).
-			MarginTop(1)
-
-		helpKeyStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FFFFFF")).
-			Background(lipgloss.Color("#2563EB")).
-			Padding(0, 1).
-			Bold(true)
-
-		helpTextStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#6B7280"))
-
-		statusStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#059669")).
-			Bold(true)
-
-		errorStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#DC2626")).
-			Bold(true)
-
-		warningStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#D97706"))
-
-		boxStyle = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("#D1D5DB")).
-			Padding(0, 1)
-
-		activeBoxStyle = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("#0D9488")).
-			Padding(0, 1)
-
-		urlStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#2563EB")).
-			Underline(true)
-
-		mediaTagStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FFFFFF")).
-			Background(lipgloss.Color("#059669")).
-			Padding(0, 1)
-
-		threadNumStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FFFFFF")).
-			Background(lipgloss.Color("#4F46E5")).
-			Padding(0, 1).
-			Bold(true)
-
-		dimStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#6B7280"))
-
-		inputLabelStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#4B5563"))
-
-		commitHashStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#059669"))
-
-		commitTimeStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#7C3AED"))
-
-		aiTagStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FFFFFF")).
-			Background(lipgloss.Color("#DB2777")).
-			Padding(0, 1).
-			Bold(true)
-	}
-}
 
 type state int
 
@@ -349,31 +72,9 @@ type Model struct {
 	commitScrollOffset int
 	commitSearch       string
 	commitSearchActive bool
-	filteredCommits    []int // indices into commits slice
-	allowThread        bool  // whether to generate threads or single posts
-	inGitRepo          bool  // whether we're in a git repository
-}
-
-// Messages
-type postResultMsg struct {
-	urls []string
-	err  error
-}
-
-type mediaUploadMsg struct {
-	mediaID string
-	path    string
-	err     error
-}
-
-type commitsLoadedMsg struct {
-	commits []git.Commit
-	err     error
-}
-
-type aiSuggestionMsg struct {
-	suggestions []string // Thread of posts
-	err         error
+	filteredCommits    []int
+	allowThread        bool
+	inGitRepo          bool
 }
 
 // New creates a new TUI model
@@ -412,7 +113,6 @@ func New() (Model, error) {
 	claudeAvailable := ai.IsClaudeAvailable()
 	inGitRepo := git.IsGitRepo()
 
-	// Determine Smart Post availability and description
 	smartPostEnabled := claudeAvailable && inGitRepo
 	smartPostDesc := "AI-powered posts from your git commits"
 	if !inGitRepo {
@@ -465,485 +165,21 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch m.state {
 		case stateHome:
-			switch msg.String() {
-			case "q", "ctrl+c", "esc":
-				return m, tea.Quit
-			case "up", "k":
-				if m.menuCursor > 0 {
-					m.menuCursor--
-				}
-			case "down", "j":
-				if m.menuCursor < len(m.menuItems)-1 {
-					m.menuCursor++
-				}
-			case "enter":
-				item := m.menuItems[m.menuCursor]
-				if item.enabled {
-					if m.menuCursor == 0 {
-						// Quick Post
-						m.state = stateCompose
-						m.isSmartPost = false
-						m.thread = []threadItem{{text: "", mediaIDs: nil, media: nil}}
-						m.currentPost = 0
-						m.textarea.SetValue("")
-						m.textarea.Focus()
-						return m, textarea.Blink
-					} else if m.menuCursor == 1 {
-						// Smart Post - show sub-menu
-						m.state = stateSmartMenu
-						m.isSmartPost = true
-						m.smartMenuCursor = 0
-						m.err = nil
-						return m, nil
-					}
-				}
-			}
-
+			return m.handleHomeKeys(msg)
 		case stateSmartMenu:
-			switch msg.String() {
-			case "esc", "q":
-				m.state = stateHome
-				m.err = nil
-				return m, nil
-			case "up", "k":
-				if m.smartMenuCursor > 0 {
-					m.smartMenuCursor--
-				}
-			case "down", "j":
-				if m.smartMenuCursor < 1 {
-					m.smartMenuCursor++
-				}
-			case "enter":
-				if m.smartMenuCursor == 0 {
-					// Browse Commits
-					m.state = stateCommitBrowser
-					m.commitCursor = 0
-					m.selectedCommits = nil
-					m.commitPromptInput.SetValue("")
-					m.commitPromptActive = false
-					m.commitScrollOffset = 0
-					m.commitSearch = ""
-					m.commitSearchActive = false
-					m.filteredCommits = nil
-					m.status = "Loading commits..."
-					return m, m.loadCommits()
-				} else {
-					// Ask
-					m.state = stateAskInput
-					m.askInput.SetValue("")
-					m.askInput.Focus()
-					m.status = "Loading commits..."
-					return m, tea.Batch(textarea.Blink, m.loadCommits())
-				}
-			case "ctrl+c":
-				return m, tea.Quit
-			}
-
+			return m.handleSmartMenuKeys(msg)
 		case stateAskInput:
-			switch msg.String() {
-			case "esc":
-				m.state = stateSmartMenu
-				m.askInput.Blur()
-				m.err = nil
-				return m, nil
-			case "ctrl+enter":
-				query := m.askInput.Value()
-				if query == "" {
-					m.err = fmt.Errorf("please enter a query")
-					return m, nil
-				}
-				m.askQuery = query
-				m.state = stateGenerating
-				m.status = "Claude is thinking..."
-				return m, m.generateFromQuery()
-			case "ctrl+c":
-				return m, tea.Quit
-			case "ctrl+t":
-				// Toggle thread mode
-				m.allowThread = !m.allowThread
-				return m, nil
-			}
-			var cmd tea.Cmd
-			m.askInput, cmd = m.askInput.Update(msg)
-			return m, cmd
-
+			return m.handleAskInputKeys(msg)
 		case stateCommitBrowser:
-			maxVisible := 8
-
-			switch msg.String() {
-			case "esc":
-				if m.commitSearchActive {
-					m.commitSearchActive = false
-					m.commitSearch = ""
-					m.filterCommits()
-					m.commitCursor = 0
-					m.commitScrollOffset = 0
-					return m, nil
-				}
-				if m.commitPromptActive {
-					m.commitPromptActive = false
-					m.commitPromptInput.Blur()
-					return m, nil
-				}
-				m.state = stateSmartMenu
-				m.commits = nil
-				m.selectedCommits = nil
-				m.err = nil
-				return m, nil
-			case "q":
-				if m.commitSearchActive || m.commitPromptActive {
-					// Pass to input
-				} else {
-					m.state = stateSmartMenu
-					m.commits = nil
-					m.selectedCommits = nil
-					m.err = nil
-					return m, nil
-				}
-			case "/":
-				if m.commitPromptActive {
-					var cmd tea.Cmd
-					m.commitPromptInput, cmd = m.commitPromptInput.Update(msg)
-					return m, cmd
-				}
-				if m.commitSearchActive {
-					// Add to search
-					m.commitSearch += "/"
-					m.filterCommits()
-					m.commitCursor = 0
-					m.commitScrollOffset = 0
-					return m, nil
-				}
-				if m.commitSearch != "" {
-					// Clear search
-					m.commitSearch = ""
-					m.filterCommits()
-					m.commitCursor = 0
-					m.commitScrollOffset = 0
-				} else {
-					// Start new search
-					m.commitSearchActive = true
-				}
-				return m, nil
-			case "tab":
-				if m.commitSearchActive {
-					m.commitSearchActive = false
-					return m, nil
-				}
-				m.commitPromptActive = !m.commitPromptActive
-				if m.commitPromptActive {
-					m.commitPromptInput.Focus()
-					return m, textarea.Blink
-				} else {
-					m.commitPromptInput.Blur()
-					return m, nil
-				}
-			case "up", "k":
-				if m.commitPromptActive {
-					var cmd tea.Cmd
-					m.commitPromptInput, cmd = m.commitPromptInput.Update(msg)
-					return m, cmd
-				}
-				if m.commitSearchActive {
-					break
-				}
-				if m.commitCursor > 0 {
-					m.commitCursor--
-					// Scroll up if needed
-					if m.commitCursor < m.commitScrollOffset {
-						m.commitScrollOffset = m.commitCursor
-					}
-				}
-			case "down", "j":
-				if m.commitPromptActive {
-					var cmd tea.Cmd
-					m.commitPromptInput, cmd = m.commitPromptInput.Update(msg)
-					return m, cmd
-				}
-				if m.commitSearchActive {
-					break
-				}
-				if m.commitCursor < len(m.filteredCommits)-1 {
-					m.commitCursor++
-					// Scroll down if needed
-					if m.commitCursor >= m.commitScrollOffset+maxVisible {
-						m.commitScrollOffset = m.commitCursor - maxVisible + 1
-					}
-				}
-			case " ":
-				if m.commitSearchActive {
-					m.commitSearch += " "
-					m.filterCommits()
-					return m, nil
-				}
-				if m.commitPromptActive {
-					var cmd tea.Cmd
-					m.commitPromptInput, cmd = m.commitPromptInput.Update(msg)
-					return m, cmd
-				}
-				// Toggle selection using filtered index
-				if m.commitCursor < len(m.filteredCommits) {
-					realIdx := m.filteredCommits[m.commitCursor]
-					found := false
-					for i, s := range m.selectedCommits {
-						if s == realIdx {
-							m.selectedCommits = append(m.selectedCommits[:i], m.selectedCommits[i+1:]...)
-							found = true
-							break
-						}
-					}
-					if !found {
-						m.selectedCommits = append(m.selectedCommits, realIdx)
-					}
-				}
-			case "enter":
-				if m.commitSearchActive {
-					m.commitSearchActive = false
-					return m, nil
-				}
-				if m.commitPromptActive {
-					m.commitPromptActive = false
-					m.commitPromptInput.Blur()
-				}
-				// Generate AI suggestion using real indices
-				if len(m.selectedCommits) == 0 && m.commitCursor < len(m.filteredCommits) {
-					m.selectedCommits = []int{m.filteredCommits[m.commitCursor]}
-				}
-				m.state = stateGenerating
-				m.status = "Generating suggestion..."
-				return m, m.generateSuggestion()
-			case "ctrl+c":
-				return m, tea.Quit
-			case "ctrl+t":
-				// Toggle thread mode
-				m.allowThread = !m.allowThread
-				return m, nil
-			case "backspace":
-				if m.commitSearchActive && len(m.commitSearch) > 0 {
-					m.commitSearch = m.commitSearch[:len(m.commitSearch)-1]
-					m.filterCommits()
-					m.commitCursor = 0
-					m.commitScrollOffset = 0
-					return m, nil
-				}
-				if m.commitPromptActive {
-					var cmd tea.Cmd
-					m.commitPromptInput, cmd = m.commitPromptInput.Update(msg)
-					return m, cmd
-				}
-			default:
-				if m.commitSearchActive {
-					// Add character to search
-					if len(msg.String()) == 1 {
-						m.commitSearch += msg.String()
-						m.filterCommits()
-						m.commitCursor = 0
-						m.commitScrollOffset = 0
-					}
-					return m, nil
-				}
-				if m.commitPromptActive {
-					var cmd tea.Cmd
-					m.commitPromptInput, cmd = m.commitPromptInput.Update(msg)
-					return m, cmd
-				}
-			}
-
+			return m.handleCommitBrowserKeys(msg)
 		case stateSmartCompose:
-			switch msg.String() {
-			case "esc":
-				m.state = stateSmartMenu
-				m.textarea.Blur()
-				m.err = nil
-				return m, nil
-			case "ctrl+s":
-				m.thread[m.currentPost].text = m.textarea.Value()
-				if !m.hasContent() {
-					m.err = fmt.Errorf("post cannot be empty")
-					return m, nil
-				}
-				m.state = statePosting
-				m.status = "Posting..."
-				return m, m.doPost()
-			case "ctrl+r":
-				// Regenerate suggestion
-				m.state = stateGenerating
-				m.status = "Regenerating..."
-				return m, m.generateSuggestion()
-			case "ctrl+o":
-				m.thread[m.currentPost].text = m.textarea.Value()
-				m.state = stateMediaInput
-				m.pathInput.SetValue("")
-				m.pathInput.Focus()
-				return m, textinput.Blink
-			case "ctrl+n":
-				// Add new post to thread
-				m.thread[m.currentPost].text = m.textarea.Value()
-				m.thread = append(m.thread, threadItem{text: "", mediaIDs: nil, media: nil})
-				m.currentPost = len(m.thread) - 1
-				m.textarea.SetValue("")
-				return m, nil
-			case "ctrl+d":
-				// Delete current post if more than one
-				if len(m.thread) > 1 {
-					m.thread = append(m.thread[:m.currentPost], m.thread[m.currentPost+1:]...)
-					if m.currentPost >= len(m.thread) {
-						m.currentPost = len(m.thread) - 1
-					}
-					m.textarea.SetValue(m.thread[m.currentPost].text)
-				}
-				return m, nil
-			case "ctrl+left", "ctrl+p":
-				// Previous post
-				if m.currentPost > 0 {
-					m.thread[m.currentPost].text = m.textarea.Value()
-					m.currentPost--
-					m.textarea.SetValue(m.thread[m.currentPost].text)
-				}
-				return m, nil
-			case "ctrl+right", "ctrl+]":
-				// Next post
-				if m.currentPost < len(m.thread)-1 {
-					m.thread[m.currentPost].text = m.textarea.Value()
-					m.currentPost++
-					m.textarea.SetValue(m.thread[m.currentPost].text)
-				}
-				return m, nil
-			case "ctrl+c":
-				return m, tea.Quit
-			}
-			var cmd tea.Cmd
-			m.textarea, cmd = m.textarea.Update(msg)
-			cmds = append(cmds, cmd)
-
+			return m.handleComposeKeys(msg, true)
 		case stateCompose:
-			switch msg.String() {
-			case "esc":
-				m.state = stateHome
-				m.textarea.Blur()
-				m.err = nil
-				m.thread = []threadItem{{text: "", mediaIDs: nil, media: nil}}
-				m.currentPost = 0
-				return m, nil
-			case "ctrl+s":
-				m.thread[m.currentPost].text = m.textarea.Value()
-				if !m.hasContent() {
-					m.err = fmt.Errorf("post cannot be empty")
-					return m, nil
-				}
-				m.state = statePosting
-				m.status = "Posting..."
-				return m, m.doPost()
-			case "ctrl+o":
-				m.thread[m.currentPost].text = m.textarea.Value()
-				m.state = stateMediaInput
-				m.pathInput.SetValue("")
-				m.pathInput.Focus()
-				return m, textinput.Blink
-			case "ctrl+n":
-				m.thread[m.currentPost].text = m.textarea.Value()
-				m.thread = append(m.thread, threadItem{text: "", mediaIDs: nil, media: nil})
-				m.currentPost = len(m.thread) - 1
-				m.textarea.SetValue("")
-				return m, nil
-			case "ctrl+up", "ctrl+k":
-				if m.currentPost > 0 {
-					m.thread[m.currentPost].text = m.textarea.Value()
-					m.currentPost--
-					m.textarea.SetValue(m.thread[m.currentPost].text)
-				}
-				return m, nil
-			case "ctrl+down", "ctrl+j":
-				if m.currentPost < len(m.thread)-1 {
-					m.thread[m.currentPost].text = m.textarea.Value()
-					m.currentPost++
-					m.textarea.SetValue(m.thread[m.currentPost].text)
-				}
-				return m, nil
-			case "ctrl+x":
-				if len(m.thread[m.currentPost].media) > 0 {
-					m.thread[m.currentPost].media = m.thread[m.currentPost].media[:len(m.thread[m.currentPost].media)-1]
-					m.thread[m.currentPost].mediaIDs = m.thread[m.currentPost].mediaIDs[:len(m.thread[m.currentPost].mediaIDs)-1]
-				}
-				return m, nil
-			case "ctrl+d":
-				if len(m.thread) > 1 {
-					m.thread = append(m.thread[:m.currentPost], m.thread[m.currentPost+1:]...)
-					if m.currentPost >= len(m.thread) {
-						m.currentPost = len(m.thread) - 1
-					}
-					m.textarea.SetValue(m.thread[m.currentPost].text)
-				}
-				return m, nil
-			case "ctrl+c":
-				return m, tea.Quit
-			}
-			var cmd tea.Cmd
-			m.textarea, cmd = m.textarea.Update(msg)
-			cmds = append(cmds, cmd)
-
+			return m.handleComposeKeys(msg, false)
 		case stateMediaInput:
-			switch msg.String() {
-			case "esc":
-				if m.isSmartPost {
-					m.state = stateSmartCompose
-				} else {
-					m.state = stateCompose
-				}
-				m.pathInput.Blur()
-				m.textarea.Focus()
-				return m, textarea.Blink
-			case "enter":
-				path := m.pathInput.Value()
-				if path == "" {
-					if m.isSmartPost {
-						m.state = stateSmartCompose
-					} else {
-						m.state = stateCompose
-					}
-					m.textarea.Focus()
-					return m, textarea.Blink
-				}
-				if strings.HasPrefix(path, "~/") {
-					home, _ := os.UserHomeDir()
-					path = filepath.Join(home, path[2:])
-				}
-				ext := strings.ToLower(filepath.Ext(path))
-				validExts := map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".gif": true, ".webp": true}
-				if !validExts[ext] {
-					m.err = fmt.Errorf("unsupported file type: %s", ext)
-					if m.isSmartPost {
-						m.state = stateSmartCompose
-					} else {
-						m.state = stateCompose
-					}
-					m.textarea.Focus()
-					return m, textarea.Blink
-				}
-				m.status = "Uploading..."
-				return m, m.uploadMedia(path)
-			case "ctrl+c":
-				return m, tea.Quit
-			}
-			var cmd tea.Cmd
-			m.pathInput, cmd = m.pathInput.Update(msg)
-			cmds = append(cmds, cmd)
-
+			return m.handleMediaInputKeys(msg)
 		case statePosted:
-			switch msg.String() {
-			case "q", "ctrl+c", "esc", "enter":
-				return m, tea.Quit
-			case "n":
-				m.state = stateHome
-				m.status = ""
-				m.postURL = ""
-				m.postURLs = nil
-				m.err = nil
-				m.thread = []threadItem{{text: "", mediaIDs: nil, media: nil}}
-				m.currentPost = 0
-				m.isSmartPost = false
-				return m, nil
-			}
+			return m.handlePostedKeys(msg)
 		}
 
 	case commitsLoadedMsg:
@@ -953,7 +189,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.state = stateHome
 		} else {
 			m.commits = msg.commits
-			// Initialize filtered commits to show all
 			m.filteredCommits = make([]int, len(msg.commits))
 			for i := range msg.commits {
 				m.filteredCommits[i] = i
@@ -966,7 +201,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.err = msg.err
 			m.state = stateSmartMenu
 		} else {
-			// Build thread from suggestions
 			m.thread = nil
 			for _, suggestion := range msg.suggestions {
 				m.thread = append(m.thread, threadItem{text: suggestion, mediaIDs: nil, media: nil})
@@ -986,13 +220,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.err = msg.err
 			m.status = ""
 		} else {
-			if m.isSmartPost {
-				m.thread[0].mediaIDs = append(m.thread[0].mediaIDs, msg.mediaID)
-				m.thread[0].media = append(m.thread[0].media, msg.path)
-			} else {
-				m.thread[m.currentPost].mediaIDs = append(m.thread[m.currentPost].mediaIDs, msg.mediaID)
-				m.thread[m.currentPost].media = append(m.thread[m.currentPost].media, msg.path)
-			}
+			m.thread[m.currentPost].mediaIDs = append(m.thread[m.currentPost].mediaIDs, msg.mediaID)
+			m.thread[m.currentPost].media = append(m.thread[m.currentPost].media, msg.path)
 			m.status = ""
 		}
 		if m.isSmartPost {
@@ -1031,504 +260,460 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m Model) View() string {
-	var b strings.Builder
+// Key handlers for each state
 
-	b.WriteString(titleStyle.Render("shippost"))
-	b.WriteString("  ")
-	b.WriteString(taglineStyle.Render("Share your work with the world"))
-	b.WriteString("\n\n")
-
-	switch m.state {
-	case stateHome:
-		for i, item := range m.menuItems {
-			if i == m.menuCursor {
-				b.WriteString(bulletStyle.Render("▸ "))
-				if item.enabled {
-					b.WriteString(selectedStyle.Render(item.title))
-				} else {
-					b.WriteString(disabledStyle.Render(item.title))
-				}
-				b.WriteString("\n")
-				if item.enabled {
-					b.WriteString(selectedDescStyle.Render(item.description))
-				} else {
-					b.WriteString(disabledDescStyle.Render(item.description))
-				}
-			} else {
-				b.WriteString(dimBulletStyle.Render("  "))
-				if item.enabled {
-					b.WriteString(menuItemStyle.Render(item.title))
-				} else {
-					b.WriteString(disabledStyle.Render(item.title))
-				}
-				b.WriteString("\n")
-				if item.enabled {
-					b.WriteString(menuDescStyle.Render(item.description))
-				} else {
-					b.WriteString(disabledDescStyle.Render(item.description))
-				}
+func (m Model) handleHomeKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "q", "ctrl+c", "esc":
+		return m, tea.Quit
+	case "up", "k":
+		if m.menuCursor > 0 {
+			m.menuCursor--
+		}
+	case "down", "j":
+		if m.menuCursor < len(m.menuItems)-1 {
+			m.menuCursor++
+		}
+	case "enter":
+		item := m.menuItems[m.menuCursor]
+		if item.enabled {
+			if m.menuCursor == 0 {
+				m.state = stateCompose
+				m.isSmartPost = false
+				m.thread = []threadItem{{text: "", mediaIDs: nil, media: nil}}
+				m.currentPost = 0
+				m.textarea.SetValue("")
+				m.textarea.Focus()
+				return m, textarea.Blink
+			} else if m.menuCursor == 1 {
+				m.state = stateSmartMenu
+				m.isSmartPost = true
+				m.smartMenuCursor = 0
+				m.err = nil
+				return m, nil
 			}
-			b.WriteString("\n\n")
 		}
+	}
+	return m, nil
+}
 
-		b.WriteString(m.renderHelpBar([]helpItem{
-			{"↑↓", "navigate"},
-			{"enter", "select"},
-			{"q", "quit"},
-		}))
-
-	case stateSmartMenu:
-		b.WriteString(subtitleStyle.Render("Smart Post"))
-		b.WriteString("\n\n")
-
-		smartMenuItems := []struct {
-			title string
-			desc  string
-		}{
-			{"Browse Commits", "Pick specific commits to post about"},
-			{"Ask", "Describe what you want to post about"},
+func (m Model) handleSmartMenuKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "esc", "q":
+		m.state = stateHome
+		m.err = nil
+		return m, nil
+	case "up", "k":
+		if m.smartMenuCursor > 0 {
+			m.smartMenuCursor--
 		}
-
-		for i, item := range smartMenuItems {
-			if i == m.smartMenuCursor {
-				b.WriteString(bulletStyle.Render("▸ "))
-				b.WriteString(selectedStyle.Render(item.title))
-				b.WriteString("\n")
-				b.WriteString(selectedDescStyle.Render(item.desc))
-			} else {
-				b.WriteString(dimBulletStyle.Render("  "))
-				b.WriteString(menuItemStyle.Render(item.title))
-				b.WriteString("\n")
-				b.WriteString(menuDescStyle.Render(item.desc))
-			}
-			b.WriteString("\n\n")
+	case "down", "j":
+		if m.smartMenuCursor < 1 {
+			m.smartMenuCursor++
 		}
-
-		b.WriteString(m.renderHelpBar([]helpItem{
-			{"↑↓", "navigate"},
-			{"enter", "select"},
-			{"esc", "back"},
-		}))
-
-	case stateAskInput:
-		b.WriteString(subtitleStyle.Render("Smart Post"))
-		b.WriteString("  ")
-		b.WriteString(aiTagStyle.Render(" Ask "))
-		b.WriteString("\n\n")
-
-		b.WriteString(dimStyle.Render("What would you like to post about?"))
-		b.WriteString("\n\n")
-
-		b.WriteString(activeBoxStyle.Render(m.askInput.View()))
-		b.WriteString("\n\n")
-
-		if m.err != nil {
-			b.WriteString(errorStyle.Render("✗ " + m.err.Error()))
-			b.WriteString("\n\n")
-		}
-
-		// Thread mode toggle
-		if m.allowThread {
-			b.WriteString(selectedStyle.Render("● "))
-			b.WriteString(menuItemStyle.Render("Allow threads"))
-			b.WriteString(dimStyle.Render(" (default)"))
-			b.WriteString("\n")
-			b.WriteString(dimStyle.Render("○ "))
-			b.WriteString(dimStyle.Render("Single post only"))
+	case "enter":
+		if m.smartMenuCursor == 0 {
+			m.state = stateCommitBrowser
+			m.commitCursor = 0
+			m.selectedCommits = nil
+			m.commitPromptInput.SetValue("")
+			m.commitPromptActive = false
+			m.commitScrollOffset = 0
+			m.commitSearch = ""
+			m.commitSearchActive = false
+			m.filteredCommits = nil
+			m.status = "Loading commits..."
+			return m, m.loadCommits()
 		} else {
-			b.WriteString(dimStyle.Render("○ "))
-			b.WriteString(dimStyle.Render("Allow threads"))
-			b.WriteString(dimStyle.Render(" (default)"))
-			b.WriteString("\n")
-			b.WriteString(selectedStyle.Render("● "))
-			b.WriteString(menuItemStyle.Render("Single post only"))
+			m.state = stateAskInput
+			m.askInput.SetValue("")
+			m.askInput.Focus()
+			m.status = "Loading commits..."
+			return m, tea.Batch(textarea.Blink, m.loadCommits())
 		}
-		b.WriteString("\n\n")
+	case "ctrl+c":
+		return m, tea.Quit
+	}
+	return m, nil
+}
 
-		b.WriteString(dimStyle.Render("Examples:"))
-		b.WriteString("\n")
-		b.WriteString(dimStyle.Render("  • What did I accomplish today?"))
-		b.WriteString("\n")
-		b.WriteString(dimStyle.Render("  • What good practices am I using?"))
-		b.WriteString("\n")
-		b.WriteString(dimStyle.Render("  • Summarize my recent refactoring work"))
-		b.WriteString("\n\n")
+func (m Model) handleAskInputKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "esc":
+		m.state = stateSmartMenu
+		m.askInput.Blur()
+		m.err = nil
+		return m, nil
+	case "ctrl+enter":
+		query := m.askInput.Value()
+		if query == "" {
+			m.err = fmt.Errorf("please enter a query")
+			return m, nil
+		}
+		m.askQuery = query
+		m.state = stateGenerating
+		m.status = "Claude is thinking..."
+		return m, m.generateFromQuery()
+	case "ctrl+c":
+		return m, tea.Quit
+	case "ctrl+t":
+		m.allowThread = !m.allowThread
+		return m, nil
+	}
+	var cmd tea.Cmd
+	m.askInput, cmd = m.askInput.Update(msg)
+	return m, cmd
+}
 
-		b.WriteString(m.renderHelpBar([]helpItem{
-			{"ctrl+enter", "generate"},
-			{"ctrl+t", "single/thread"},
-			{"esc", "back"},
-		}))
+func (m Model) handleCommitBrowserKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	const maxVisible = 8
 
-	case stateCommitBrowser:
-		maxVisible := 8
-
-		b.WriteString(subtitleStyle.Render("Smart Post"))
-		b.WriteString("  ")
-		b.WriteString(dimStyle.Render("Select commits to post about"))
-		b.WriteString("\n\n")
-
-		// Search bar
+	switch msg.String() {
+	case "esc":
 		if m.commitSearchActive {
-			b.WriteString(dimStyle.Render("/"))
-			b.WriteString(selectedStyle.Render(m.commitSearch))
-			b.WriteString(selectedStyle.Render("▌"))
-			b.WriteString("\n\n")
-		} else if m.commitSearch != "" {
-			b.WriteString(dimStyle.Render("/"))
-			b.WriteString(menuItemStyle.Render(m.commitSearch))
-			b.WriteString("  ")
-			b.WriteString(dimStyle.Render(fmt.Sprintf("(%d matches)", len(m.filteredCommits))))
-			b.WriteString("\n\n")
+			m.commitSearchActive = false
+			m.commitSearch = ""
+			m.filterCommits()
+			m.commitCursor = 0
+			m.commitScrollOffset = 0
+			return m, nil
+		}
+		if m.commitPromptActive {
+			m.commitPromptActive = false
+			m.commitPromptInput.Blur()
+			return m, nil
+		}
+		m.state = stateSmartMenu
+		m.commits = nil
+		m.selectedCommits = nil
+		m.err = nil
+		return m, nil
+	case "q":
+		if m.commitSearchActive || m.commitPromptActive {
+			// Pass to input
+		} else {
+			m.state = stateSmartMenu
+			m.commits = nil
+			m.selectedCommits = nil
+			m.err = nil
+			return m, nil
+		}
+	case "/":
+		if m.commitPromptActive {
+			var cmd tea.Cmd
+			m.commitPromptInput, cmd = m.commitPromptInput.Update(msg)
+			return m, cmd
+		}
+		if m.commitSearchActive {
+			m.commitSearch += "/"
+			m.filterCommits()
+			m.commitCursor = 0
+			m.commitScrollOffset = 0
+			return m, nil
+		}
+		if m.commitSearch != "" {
+			m.commitSearch = ""
+			m.filterCommits()
+			m.commitCursor = 0
+			m.commitScrollOffset = 0
+		} else {
+			m.commitSearchActive = true
+		}
+		return m, nil
+	case "tab":
+		if m.commitSearchActive {
+			m.commitSearchActive = false
+			return m, nil
+		}
+		m.commitPromptActive = !m.commitPromptActive
+		if m.commitPromptActive {
+			m.commitPromptInput.Focus()
+			return m, textarea.Blink
+		} else {
+			m.commitPromptInput.Blur()
+			return m, nil
+		}
+	case "up", "k":
+		if m.commitPromptActive {
+			var cmd tea.Cmd
+			m.commitPromptInput, cmd = m.commitPromptInput.Update(msg)
+			return m, cmd
+		}
+		if m.commitSearchActive {
+			break
+		}
+		if m.commitCursor > 0 {
+			m.commitCursor--
+			if m.commitCursor < m.commitScrollOffset {
+				m.commitScrollOffset = m.commitCursor
+			}
+		}
+	case "down", "j":
+		if m.commitPromptActive {
+			var cmd tea.Cmd
+			m.commitPromptInput, cmd = m.commitPromptInput.Update(msg)
+			return m, cmd
+		}
+		if m.commitSearchActive {
+			break
+		}
+		if m.commitCursor < len(m.filteredCommits)-1 {
+			m.commitCursor++
+			if m.commitCursor >= m.commitScrollOffset+maxVisible {
+				m.commitScrollOffset = m.commitCursor - maxVisible + 1
+			}
+		}
+	case " ":
+		if m.commitSearchActive {
+			m.commitSearch += " "
+			m.filterCommits()
+			return m, nil
+		}
+		if m.commitPromptActive {
+			var cmd tea.Cmd
+			m.commitPromptInput, cmd = m.commitPromptInput.Update(msg)
+			return m, cmd
+		}
+		if m.commitCursor < len(m.filteredCommits) {
+			realIdx := m.filteredCommits[m.commitCursor]
+			found := false
+			for i, s := range m.selectedCommits {
+				if s == realIdx {
+					m.selectedCommits = append(m.selectedCommits[:i], m.selectedCommits[i+1:]...)
+					found = true
+					break
+				}
+			}
+			if !found {
+				m.selectedCommits = append(m.selectedCommits, realIdx)
+			}
+		}
+	case "enter":
+		if m.commitSearchActive {
+			m.commitSearchActive = false
+			return m, nil
+		}
+		if m.commitPromptActive {
+			m.commitPromptActive = false
+			m.commitPromptInput.Blur()
+		}
+		if len(m.selectedCommits) == 0 && m.commitCursor < len(m.filteredCommits) {
+			m.selectedCommits = []int{m.filteredCommits[m.commitCursor]}
+		}
+		m.state = stateGenerating
+		m.status = "Generating suggestion..."
+		return m, m.generateSuggestion()
+	case "ctrl+c":
+		return m, tea.Quit
+	case "ctrl+t":
+		m.allowThread = !m.allowThread
+		return m, nil
+	case "backspace":
+		if m.commitSearchActive && len(m.commitSearch) > 0 {
+			m.commitSearch = m.commitSearch[:len(m.commitSearch)-1]
+			m.filterCommits()
+			m.commitCursor = 0
+			m.commitScrollOffset = 0
+			return m, nil
+		}
+		if m.commitPromptActive {
+			var cmd tea.Cmd
+			m.commitPromptInput, cmd = m.commitPromptInput.Update(msg)
+			return m, cmd
+		}
+	default:
+		if m.commitSearchActive {
+			if len(msg.String()) == 1 {
+				m.commitSearch += msg.String()
+				m.filterCommits()
+				m.commitCursor = 0
+				m.commitScrollOffset = 0
+			}
+			return m, nil
+		}
+		if m.commitPromptActive {
+			var cmd tea.Cmd
+			m.commitPromptInput, cmd = m.commitPromptInput.Update(msg)
+			return m, cmd
+		}
+	}
+	return m, nil
+}
+
+// handleComposeKeys handles keys for both stateCompose and stateSmartCompose
+func (m Model) handleComposeKeys(msg tea.KeyMsg, isSmartPost bool) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "esc":
+		if isSmartPost {
+			m.state = stateSmartMenu
+		} else {
+			m.state = stateHome
+			m.thread = []threadItem{{text: "", mediaIDs: nil, media: nil}}
+			m.currentPost = 0
+		}
+		m.textarea.Blur()
+		m.err = nil
+		return m, nil
+
+	case "ctrl+s":
+		m.thread[m.currentPost].text = m.textarea.Value()
+		if !m.hasContent() {
+			m.err = fmt.Errorf("post cannot be empty")
+			return m, nil
+		}
+		m.state = statePosting
+		m.status = "Posting..."
+		return m, m.doPost()
+
+	case "ctrl+r":
+		if isSmartPost {
+			m.state = stateGenerating
+			m.status = "Regenerating..."
+			return m, m.generateSuggestion()
 		}
 
-		if m.status != "" {
-			b.WriteString(statusStyle.Render("● " + m.status))
-			b.WriteString("\n")
-		} else if m.err != nil {
-			b.WriteString(errorStyle.Render("✗ " + m.err.Error()))
-			b.WriteString("\n")
-		} else if len(m.commits) == 0 {
-			b.WriteString(dimStyle.Render("No commits found in this repository"))
-		} else if len(m.filteredCommits) == 0 {
-			b.WriteString(dimStyle.Render("No matching commits"))
+	case "ctrl+o":
+		m.thread[m.currentPost].text = m.textarea.Value()
+		m.state = stateMediaInput
+		m.pathInput.SetValue("")
+		m.pathInput.Focus()
+		return m, textinput.Blink
+
+	case "ctrl+n":
+		m.thread[m.currentPost].text = m.textarea.Value()
+		m.thread = append(m.thread, threadItem{text: "", mediaIDs: nil, media: nil})
+		m.currentPost = len(m.thread) - 1
+		m.textarea.SetValue("")
+		return m, nil
+
+	case "ctrl+d":
+		if len(m.thread) > 1 {
+			m.thread = append(m.thread[:m.currentPost], m.thread[m.currentPost+1:]...)
+			if m.currentPost >= len(m.thread) {
+				m.currentPost = len(m.thread) - 1
+			}
+			m.textarea.SetValue(m.thread[m.currentPost].text)
+		}
+		return m, nil
+
+	case "ctrl+x":
+		if !isSmartPost && len(m.thread[m.currentPost].media) > 0 {
+			m.thread[m.currentPost].media = m.thread[m.currentPost].media[:len(m.thread[m.currentPost].media)-1]
+			m.thread[m.currentPost].mediaIDs = m.thread[m.currentPost].mediaIDs[:len(m.thread[m.currentPost].mediaIDs)-1]
+		}
+		return m, nil
+
+	case "ctrl+left", "ctrl+p":
+		if isSmartPost && m.currentPost > 0 {
+			m.thread[m.currentPost].text = m.textarea.Value()
+			m.currentPost--
+			m.textarea.SetValue(m.thread[m.currentPost].text)
+		}
+		return m, nil
+
+	case "ctrl+right", "ctrl+]":
+		if isSmartPost && m.currentPost < len(m.thread)-1 {
+			m.thread[m.currentPost].text = m.textarea.Value()
+			m.currentPost++
+			m.textarea.SetValue(m.thread[m.currentPost].text)
+		}
+		return m, nil
+
+	case "ctrl+up", "ctrl+k":
+		if !isSmartPost && m.currentPost > 0 {
+			m.thread[m.currentPost].text = m.textarea.Value()
+			m.currentPost--
+			m.textarea.SetValue(m.thread[m.currentPost].text)
+		}
+		return m, nil
+
+	case "ctrl+down", "ctrl+j":
+		if !isSmartPost && m.currentPost < len(m.thread)-1 {
+			m.thread[m.currentPost].text = m.textarea.Value()
+			m.currentPost++
+			m.textarea.SetValue(m.thread[m.currentPost].text)
+		}
+		return m, nil
+
+	case "ctrl+c":
+		return m, tea.Quit
+	}
+
+	var cmd tea.Cmd
+	m.textarea, cmd = m.textarea.Update(msg)
+	return m, cmd
+}
+
+func (m Model) handleMediaInputKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "esc":
+		if m.isSmartPost {
+			m.state = stateSmartCompose
 		} else {
-			// Show scroll indicator if there are more commits above
-			if m.commitScrollOffset > 0 {
-				b.WriteString(dimStyle.Render(fmt.Sprintf("  ↑ %d more above\n", m.commitScrollOffset)))
-			}
-
-			// Show visible window of commits
-			end := m.commitScrollOffset + maxVisible
-			if end > len(m.filteredCommits) {
-				end = len(m.filteredCommits)
-			}
-
-			for i := m.commitScrollOffset; i < end; i++ {
-				realIdx := m.filteredCommits[i]
-				commit := m.commits[realIdx]
-
-				isSelected := false
-				for _, s := range m.selectedCommits {
-					if s == realIdx {
-						isSelected = true
-						break
-					}
-				}
-
-				if i == m.commitCursor {
-					b.WriteString(bulletStyle.Render("▸ "))
-				} else {
-					b.WriteString("  ")
-				}
-
-				if isSelected {
-					b.WriteString(selectedStyle.Render("● "))
-				} else {
-					b.WriteString(dimStyle.Render("○ "))
-				}
-
-				b.WriteString(commitTimeStyle.Render(fmt.Sprintf("%-12s ", commit.Ago)))
-
-				if i == m.commitCursor {
-					b.WriteString(selectedStyle.Render(truncate(commit.Subject, 45)))
-				} else {
-					b.WriteString(menuItemStyle.Render(truncate(commit.Subject, 45)))
-				}
-				b.WriteString("\n")
-			}
-
-			// Show scroll indicator if there are more commits below
-			remaining := len(m.filteredCommits) - end
-			if remaining > 0 {
-				b.WriteString(dimStyle.Render(fmt.Sprintf("  ↓ %d more below\n", remaining)))
-			}
-
-			if len(m.selectedCommits) > 0 {
-				b.WriteString("\n")
-				b.WriteString(dimStyle.Render(fmt.Sprintf("%d commit(s) selected", len(m.selectedCommits))))
-			}
-
-			// Prompt input
-			b.WriteString("\n\n")
-			b.WriteString(inputLabelStyle.Render("Prompt "))
-			b.WriteString(dimStyle.Render("(optional)"))
-			b.WriteString("\n")
-			if m.commitPromptActive {
-				b.WriteString(activeBoxStyle.Render(m.commitPromptInput.View()))
+			m.state = stateCompose
+		}
+		m.pathInput.Blur()
+		m.textarea.Focus()
+		return m, textarea.Blink
+	case "enter":
+		path := m.pathInput.Value()
+		if path == "" {
+			if m.isSmartPost {
+				m.state = stateSmartCompose
 			} else {
-				b.WriteString(boxStyle.Render(m.commitPromptInput.View()))
+				m.state = stateCompose
 			}
-
+			m.textarea.Focus()
+			return m, textarea.Blink
 		}
-
-		// Thread mode toggle (always visible)
-		b.WriteString("\n\n")
-		if m.allowThread {
-			b.WriteString(selectedStyle.Render("● "))
-			b.WriteString(menuItemStyle.Render("Allow threads"))
-			b.WriteString(dimStyle.Render(" (default)"))
-			b.WriteString("\n")
-			b.WriteString(dimStyle.Render("○ "))
-			b.WriteString(dimStyle.Render("Single post only"))
-		} else {
-			b.WriteString(dimStyle.Render("○ "))
-			b.WriteString(dimStyle.Render("Allow threads"))
-			b.WriteString(dimStyle.Render(" (default)"))
-			b.WriteString("\n")
-			b.WriteString(selectedStyle.Render("● "))
-			b.WriteString(menuItemStyle.Render("Single post only"))
+		if strings.HasPrefix(path, "~/") {
+			home, _ := os.UserHomeDir()
+			path = filepath.Join(home, path[2:])
 		}
-
-		b.WriteString("\n\n")
-		searchHelp := "search"
-		if !m.commitSearchActive && m.commitSearch != "" {
-			searchHelp = "clear"
-		}
-		b.WriteString(m.renderHelpBar([]helpItem{
-			{"↑↓", "navigate"},
-			{"space", "select"},
-			{"/", searchHelp},
-			{"tab", "prompt"},
-			{"ctrl+t", "single/thread"},
-			{"enter", "generate"},
-			{"esc", "back"},
-		}))
-
-	case stateGenerating:
-		b.WriteString(subtitleStyle.Render("Smart Post"))
-		b.WriteString("\n\n")
-		b.WriteString(statusStyle.Render("● " + m.status))
-		b.WriteString("\n\n")
-		b.WriteString(dimStyle.Render("Claude is writing your post..."))
-
-	case stateSmartCompose:
-		b.WriteString(subtitleStyle.Render("Smart Post"))
-		b.WriteString("  ")
-		b.WriteString(aiTagStyle.Render(" AI "))
-		if len(m.thread) > 1 {
-			b.WriteString("  ")
-			b.WriteString(threadNumStyle.Render(fmt.Sprintf(" THREAD %d/%d ", m.currentPost+1, len(m.thread))))
-		}
-		b.WriteString("\n")
-
-		// Show thread indicator dots when multiple posts
-		if len(m.thread) > 1 {
-			b.WriteString("\n")
-			for i := range m.thread {
-				if i == m.currentPost {
-					b.WriteString(selectedStyle.Render("●"))
-				} else {
-					b.WriteString(dimStyle.Render("○"))
-				}
-				if i < len(m.thread)-1 {
-					b.WriteString(dimStyle.Render("─"))
-				}
+		ext := strings.ToLower(filepath.Ext(path))
+		validExts := map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".gif": true, ".webp": true}
+		if !validExts[ext] {
+			m.err = fmt.Errorf("unsupported file type: %s", ext)
+			if m.isSmartPost {
+				m.state = stateSmartCompose
+			} else {
+				m.state = stateCompose
 			}
-			b.WriteString("\n")
+			m.textarea.Focus()
+			return m, textarea.Blink
 		}
-		b.WriteString("\n")
-
-		b.WriteString(activeBoxStyle.Render(m.textarea.View()))
-		b.WriteString("\n")
-
-		charCount := len(m.textarea.Value())
-		countStyle := helpTextStyle
-		if charCount > 260 {
-			countStyle = warningStyle
-		}
-		if charCount > 280 {
-			countStyle = errorStyle
-		}
-		b.WriteString(countStyle.Render(fmt.Sprintf("%d", charCount)))
-		b.WriteString(helpTextStyle.Render("/280"))
-
-		if len(m.thread[m.currentPost].media) > 0 {
-			b.WriteString("  ")
-			for _, path := range m.thread[m.currentPost].media {
-				b.WriteString(mediaTagStyle.Render(" 📎 " + filepath.Base(path) + " "))
-				b.WriteString(" ")
-			}
-		}
-
-		if m.err != nil {
-			b.WriteString("\n")
-			b.WriteString(errorStyle.Render("✗ " + m.err.Error()))
-		}
-
-		b.WriteString("\n")
-		helpItems := []helpItem{
-			{"ctrl+s", "send"},
-			{"ctrl+r", "regen"},
-			{"ctrl+o", "attach"},
-			{"ctrl+n", "add"},
-		}
-		if len(m.thread) > 1 {
-			helpItems = append(helpItems, helpItem{"ctrl+d", "delete"})
-			helpItems = append(helpItems, helpItem{"ctrl+←→", "nav"})
-		}
-		helpItems = append(helpItems, helpItem{"esc", "back"})
-		b.WriteString(m.renderHelpBar(helpItems))
-
-	case stateCompose, statePosting:
-		if len(m.thread) > 1 {
-			b.WriteString(subtitleStyle.Render("Quick Post"))
-			b.WriteString("  ")
-			b.WriteString(threadNumStyle.Render(fmt.Sprintf(" %d/%d ", m.currentPost+1, len(m.thread))))
-		} else {
-			b.WriteString(subtitleStyle.Render("Quick Post"))
-		}
-		b.WriteString("\n\n")
-
-		if m.state == stateCompose {
-			b.WriteString(activeBoxStyle.Render(m.textarea.View()))
-		} else {
-			b.WriteString(boxStyle.Render(m.textarea.View()))
-		}
-		b.WriteString("\n")
-
-		charCount := len(m.textarea.Value())
-		countStyle := helpTextStyle
-		if charCount > 260 {
-			countStyle = warningStyle
-		}
-		if charCount > 280 {
-			countStyle = errorStyle
-		}
-		b.WriteString(countStyle.Render(fmt.Sprintf("%d", charCount)))
-		b.WriteString(helpTextStyle.Render("/280"))
-
-		if len(m.thread[m.currentPost].media) > 0 {
-			b.WriteString("  ")
-			for _, path := range m.thread[m.currentPost].media {
-				b.WriteString(mediaTagStyle.Render(" 📎 " + filepath.Base(path) + " "))
-				b.WriteString(" ")
-			}
-		}
-
-		if m.err != nil {
-			b.WriteString("\n")
-			b.WriteString(errorStyle.Render("✗ " + m.err.Error()))
-		}
-
-		if m.state == statePosting {
-			b.WriteString("\n")
-			b.WriteString(statusStyle.Render("● " + m.status))
-		}
-
-		if len(m.thread) > 1 {
-			b.WriteString("\n\n")
-			b.WriteString(dimStyle.Render("Thread:"))
-			b.WriteString("\n")
-			for i, item := range m.thread {
-				prefix := "  "
-				if i == m.currentPost {
-					prefix = "▸ "
-					b.WriteString(selectedStyle.Render(prefix))
-				} else {
-					b.WriteString(dimStyle.Render(prefix))
-				}
-				preview := item.text
-				if i == m.currentPost {
-					preview = m.textarea.Value()
-				}
-				if len(preview) > 40 {
-					preview = preview[:37] + "..."
-				}
-				if preview == "" {
-					preview = "(empty)"
-				}
-				if i == m.currentPost {
-					b.WriteString(selectedStyle.Render(fmt.Sprintf("%d. %s", i+1, preview)))
-				} else {
-					b.WriteString(dimStyle.Render(fmt.Sprintf("%d. %s", i+1, preview)))
-				}
-				if len(item.media) > 0 {
-					b.WriteString(dimStyle.Render(fmt.Sprintf(" [%d media]", len(item.media))))
-				}
-				b.WriteString("\n")
-			}
-		}
-
-		b.WriteString("\n")
-		helpItems := []helpItem{
-			{"ctrl+s", "send"},
-			{"ctrl+o", "attach"},
-			{"ctrl+n", "add"},
-		}
-		if len(m.thread[m.currentPost].media) > 0 {
-			helpItems = append(helpItems, helpItem{"ctrl+x", "remove media"})
-		}
-		if len(m.thread) > 1 {
-			helpItems = append(helpItems, helpItem{"ctrl+d", "delete"})
-			helpItems = append(helpItems, helpItem{"ctrl+↑↓", "nav"})
-		}
-		helpItems = append(helpItems, helpItem{"esc", "back"})
-		b.WriteString(m.renderHelpBar(helpItems))
-
-	case stateMediaInput:
-		b.WriteString(subtitleStyle.Render("Attach Image"))
-		b.WriteString("\n\n")
-		b.WriteString(inputLabelStyle.Render("File path:"))
-		b.WriteString("\n")
-		b.WriteString(activeBoxStyle.Render(m.pathInput.View()))
-		b.WriteString("\n")
-		b.WriteString(dimStyle.Render("Supports: .jpg .png .gif .webp • Use ~/path for home"))
-
-		if m.status != "" {
-			b.WriteString("\n")
-			b.WriteString(statusStyle.Render("● " + m.status))
-		}
-
-		b.WriteString("\n")
-		b.WriteString(m.renderHelpBar([]helpItem{
-			{"enter", "upload"},
-			{"esc", "cancel"},
-		}))
-
-	case statePosted:
-		if len(m.postURLs) > 1 {
-			b.WriteString(statusStyle.Render(fmt.Sprintf("✓ Thread posted! (%d posts)", len(m.postURLs))))
-		} else {
-			b.WriteString(statusStyle.Render("✓ Posted successfully!"))
-		}
-		b.WriteString("\n\n")
-
-		for i, url := range m.postURLs {
-			if len(m.postURLs) > 1 {
-				b.WriteString(dimStyle.Render(fmt.Sprintf("%d. ", i+1)))
-			}
-			b.WriteString(urlStyle.Render(url))
-			b.WriteString("\n")
-		}
-
-		b.WriteString("\n")
-		b.WriteString(m.renderHelpBar([]helpItem{
-			{"n", "new post"},
-			{"q", "quit"},
-		}))
+		m.status = "Uploading..."
+		return m, m.uploadMedia(path)
+	case "ctrl+c":
+		return m, tea.Quit
 	}
-
-	return b.String()
+	var cmd tea.Cmd
+	m.pathInput, cmd = m.pathInput.Update(msg)
+	return m, cmd
 }
 
-type helpItem struct {
-	key  string
-	text string
-}
-
-func (m Model) renderHelpBar(items []helpItem) string {
-	var parts []string
-	for _, item := range items {
-		parts = append(parts, helpKeyStyle.Render(item.key)+" "+helpTextStyle.Render(item.text))
+func (m Model) handlePostedKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "q", "ctrl+c", "esc", "enter":
+		return m, tea.Quit
+	case "n":
+		m.state = stateHome
+		m.status = ""
+		m.postURL = ""
+		m.postURLs = nil
+		m.err = nil
+		m.thread = []threadItem{{text: "", mediaIDs: nil, media: nil}}
+		m.currentPost = 0
+		m.isSmartPost = false
+		return m, nil
 	}
-	return helpBarStyle.Render(strings.Join(parts, "   "))
+	return m, nil
 }
+
+// Helper methods
 
 func (m *Model) filterCommits() {
 	if m.commitSearch == "" {
-		// Show all commits
 		m.filteredCommits = make([]int, len(m.commits))
 		for i := range m.commits {
 			m.filteredCommits[i] = i
@@ -1552,124 +737,6 @@ func (m Model) hasContent() bool {
 		}
 	}
 	return strings.TrimSpace(m.textarea.Value()) != ""
-}
-
-func (m Model) loadCommits() tea.Cmd {
-	return func() tea.Msg {
-		commits, err := git.GetRecentCommits(50)
-		if err != nil {
-			return commitsLoadedMsg{err: err}
-		}
-		return commitsLoadedMsg{commits: commits}
-	}
-}
-
-func (m Model) generateSuggestion() tea.Cmd {
-	prompt := m.commitPromptInput.Value()
-	allowThread := m.allowThread
-	return func() tea.Msg {
-		var selectedCommits []git.Commit
-		for _, idx := range m.selectedCommits {
-			if idx < len(m.commits) {
-				selectedCommits = append(selectedCommits, m.commits[idx])
-			}
-		}
-
-		if !ai.IsClaudeAvailable() {
-			return aiSuggestionMsg{err: fmt.Errorf("claude CLI not found - install Claude Code first")}
-		}
-
-		suggestions, err := ai.GeneratePostSuggestion(selectedCommits, prompt, allowThread)
-		if err != nil {
-			return aiSuggestionMsg{err: err}
-		}
-		return aiSuggestionMsg{suggestions: suggestions}
-	}
-}
-
-func (m Model) generateFromQuery() tea.Cmd {
-	query := m.askQuery
-	commits := m.commits
-	allowThread := m.allowThread
-	return func() tea.Msg {
-		if !ai.IsClaudeAvailable() {
-			return aiSuggestionMsg{err: fmt.Errorf("claude CLI not found - install Claude Code first")}
-		}
-
-		suggestions, err := ai.GenerateFromQuery(query, commits, allowThread)
-		if err != nil {
-			return aiSuggestionMsg{err: err}
-		}
-		return aiSuggestionMsg{suggestions: suggestions}
-	}
-}
-
-func (m Model) uploadMedia(path string) tea.Cmd {
-	return func() tea.Msg {
-		resp, err := m.xClient.UploadMedia(path)
-		if err != nil {
-			return mediaUploadMsg{err: err}
-		}
-		return mediaUploadMsg{mediaID: resp.MediaIDString, path: path}
-	}
-}
-
-func (m Model) doPost() tea.Cmd {
-	return func() tea.Msg {
-		var posts []x.ThreadPost
-		for i, item := range m.thread {
-			text := item.text
-			if i == m.currentPost {
-				text = m.textarea.Value()
-			}
-			if strings.TrimSpace(text) == "" && len(item.mediaIDs) == 0 {
-				continue
-			}
-			posts = append(posts, x.ThreadPost{
-				Text:     text,
-				MediaIDs: item.mediaIDs,
-			})
-		}
-
-		if len(posts) == 0 {
-			return postResultMsg{err: fmt.Errorf("no content to post")}
-		}
-
-		if len(posts) == 1 {
-			resp, err := m.xClient.PostWithOptions(posts[0].Text, &x.PostOptions{
-				MediaIDs: posts[0].MediaIDs,
-			})
-			if err != nil {
-				return postResultMsg{err: err}
-			}
-			return postResultMsg{urls: []string{fmt.Sprintf("https://x.com/i/status/%s", resp.Data.ID)}}
-		}
-
-		responses, err := m.xClient.PostThread(posts)
-		if err != nil {
-			return postResultMsg{err: err}
-		}
-
-		var urls []string
-		for _, resp := range responses {
-			urls = append(urls, fmt.Sprintf("https://x.com/i/status/%s", resp.Data.ID))
-		}
-		return postResultMsg{urls: urls}
-	}
-}
-
-func truncate(s string, max int) string {
-	if len(s) <= max {
-		return s
-	}
-	return s[:max-3] + "..."
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }
 
 // Run starts the TUI
