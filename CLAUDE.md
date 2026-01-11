@@ -12,7 +12,10 @@ shippost/
 ├── config/
 │   └── config.go        # Credential storage (~/.config/shippost/config.json)
 ├── tui/
-│   └── tui.go           # Bubbletea TUI (all screens and views)
+│   ├── tui.go           # Model, state machine, key handlers
+│   ├── styles.go        # Lipgloss styles (dark/light themes)
+│   ├── views.go         # View rendering for all screens
+│   └── commands.go      # Async commands (API calls, AI generation)
 ├── x/
 │   └── client.go        # X API client (OAuth 1.0a, posting, media upload)
 ├── ai/
@@ -27,30 +30,38 @@ shippost/
 
 ## Architecture
 
-### TUI (tui/tui.go)
+### TUI (tui/)
 
 Built with [Bubbletea](https://github.com/charmbracelet/bubbletea) and [Lipgloss](https://github.com/charmbracelet/lipgloss).
 
-**Screens (viewState enum):**
-- `viewHome` - Main menu (Quick Post, Smart Post)
-- `viewQuickPost` - Direct text composition
-- `viewSmartMenu` - Smart Post sub-menu (Browse Commits, Ask)
-- `viewSmartBrowse` - Commit browser with multi-select
-- `viewSmartAsk` - Natural language query input
-- `viewSmartCompose` - Edit AI-generated posts before sending
-- `viewPosting` - Loading state while posting
-- `viewSuccess` - Post confirmation with URL
+**File Organization:**
+- `tui.go` - Model struct, New(), Init(), Update(), key handlers
+- `styles.go` - All lipgloss style definitions, theme detection
+- `views.go` - View() and all screen rendering functions
+- `commands.go` - Async tea.Cmd functions for API/AI calls
+
+**States (state enum):**
+- `stateHome` - Main menu (Quick Post, Smart Post)
+- `stateCompose` - Quick Post text composition
+- `stateSmartMenu` - Smart Post sub-menu (Browse Commits, Ask)
+- `stateCommitBrowser` - Commit browser with multi-select
+- `stateAskInput` - Natural language query input
+- `stateGenerating` - AI generation in progress
+- `stateSmartCompose` - Edit AI-generated posts before sending
+- `stateMediaInput` - File path input for attachments
+- `statePosting` - Posting in progress
+- `statePosted` - Success confirmation with URL
 
 **Key Model Fields:**
-- `posts []postItem` - Thread posts (text + optional media)
+- `thread []threadItem` - Thread posts (text + optional media)
 - `currentPost int` - Active post in thread
 - `commits []git.Commit` - Loaded git commits
-- `selectedCommits map[int]bool` - Multi-select for Browse mode
+- `selectedCommits []int` - Multi-select indices for Browse mode
 - `allowThread bool` - Single post vs thread toggle
 
 **Theme Detection:**
 - `lipgloss.HasDarkBackground()` auto-detects terminal theme
-- Two complete color palettes (dark/light) in `initStyles()`
+- Two complete color palettes (dark/light) in `styles.go`
 
 ### X Client (x/client.go)
 
@@ -63,12 +74,12 @@ Built with [Bubbletea](https://github.com/charmbracelet/bubbletea) and [Lipgloss
 ### AI Integration (ai/claude.go)
 
 - Requires Claude Code CLI (`claude`) in PATH
-- Three generation modes:
+- Two generation modes:
   - `GeneratePostSuggestion()` - From selected commits
   - `GenerateFromQuery()` - Natural language questions
-  - `GeneratePostFromDiff()` - From commit diff (unused currently)
 - Thread posts separated by `---` in AI response
 - Prompts enforce 280 char limit and natural tone
+- Git hash validation to prevent command injection
 
 ### Git Integration (git/git.go)
 
@@ -138,10 +149,11 @@ Credentials stored at `~/.config/shippost/config.json`:
 ## Common Tasks
 
 ### Adding a New Screen
-1. Add constant to `viewState` enum in tui.go
-2. Add case in `View()` method
-3. Add keyboard handling in `Update()` method
-4. Add help bar in relevant view function
+1. Add constant to `state` enum in tui/tui.go
+2. Add view function in tui/views.go
+3. Add case in `View()` switch in tui/views.go
+4. Add key handler function in tui/tui.go
+5. Add case in `Update()` switch to call the handler
 
 ### Modifying AI Prompts
 Edit prompts in `ai/claude.go`. Key considerations:
@@ -150,8 +162,8 @@ Edit prompts in `ai/claude.go`. Key considerations:
 - Keep prompts concise to reduce latency
 
 ### Adding New Keyboard Shortcuts
-1. Handle in appropriate `case` in `Update()` method
-2. Add to help bar in relevant view
+1. Handle in appropriate handler function in tui/tui.go
+2. Add to help bar in relevant view function in tui/views.go
 3. Document in README.md
 
 ## Distribution
