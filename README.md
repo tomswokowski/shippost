@@ -45,7 +45,7 @@ You need X API credentials with Read+Write permissions.
 ### 1. Create X Developer Account
 
 1. Go to [developer.x.com](https://developer.x.com)
-2. Sign up for a developer account (Free tier allows 1,500 posts/month)
+2. Sign up for a developer account (Free tier allows 500 posts/month)
 3. Create a new Project and App
 
 ### 2. Generate Credentials

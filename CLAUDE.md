@@ -167,6 +167,6 @@ Edit prompts in `ai/claude.go`. Key considerations:
 
 ## External Requirements
 
-- X API credentials (Free tier: 1,500 posts/month)
+- X API credentials (Free tier: 500 posts/month)
 - Claude Code CLI (optional, for Smart Post features)
 - Git repository (optional, for Smart Post features)
