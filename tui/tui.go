@@ -143,7 +143,9 @@ const (
 	stateMediaInput
 	statePosting
 	statePosted
+	stateSmartMenu
 	stateCommitBrowser
+	stateAskInput
 	stateGenerating
 	stateSmartCompose
 )
@@ -162,26 +164,35 @@ type threadItem struct {
 
 // Model is the main TUI model
 type Model struct {
-	state           state
-	menuCursor      int
-	menuItems       []menuItem
-	textarea        textarea.Model
-	pathInput       textinput.Model
-	thread          []threadItem
-	currentPost     int
-	status          string
-	err             error
-	postURL         string
-	postURLs        []string
-	width           int
-	height          int
-	xClient         *x.Client
-	cfg             *config.Config
-	commits         []git.Commit
-	commitCursor    int
-	selectedCommits []int
-	aiSuggestion    string
-	isSmartPost     bool
+	state              state
+	menuCursor         int
+	menuItems          []menuItem
+	textarea           textarea.Model
+	pathInput          textinput.Model
+	askInput           textinput.Model
+	commitPromptInput  textinput.Model
+	thread             []threadItem
+	currentPost        int
+	status             string
+	err                error
+	postURL            string
+	postURLs           []string
+	width              int
+	height             int
+	xClient            *x.Client
+	cfg                *config.Config
+	commits            []git.Commit
+	commitCursor       int
+	selectedCommits    []int
+	aiSuggestion       string
+	isSmartPost        bool
+	smartMenuCursor    int
+	askQuery           string
+	commitPromptActive bool
+	commitScrollOffset int
+	commitSearch       string
+	commitSearchActive bool
+	filteredCommits    []int // indices into commits slice
 }
 
 // Messages
@@ -225,6 +236,16 @@ func New() (Model, error) {
 	pi.Width = 50
 	pi.CharLimit = 256
 
+	askIn := textinput.New()
+	askIn.Placeholder = "What did I accomplish today?"
+	askIn.Width = 50
+	askIn.CharLimit = 256
+
+	commitPrompt := textinput.New()
+	commitPrompt.Placeholder = "Optional: focus on performance, make it casual, etc."
+	commitPrompt.Width = 55
+	commitPrompt.CharLimit = 256
+
 	claudeAvailable := ai.IsClaudeAvailable()
 	smartPostDesc := "AI-powered posts to X from your commits"
 	if !claudeAvailable {
@@ -245,18 +266,20 @@ func New() (Model, error) {
 	}
 
 	return Model{
-		state:           stateHome,
-		menuCursor:      0,
-		menuItems:       menuItems,
-		textarea:        ta,
-		pathInput:       pi,
-		thread:          []threadItem{{text: "", mediaIDs: nil, media: nil}},
-		currentPost:     0,
-		xClient:         x.NewClient(cfg),
-		cfg:             cfg,
-		commits:         nil,
-		commitCursor:    0,
-		selectedCommits: nil,
+		state:             stateHome,
+		menuCursor:        0,
+		menuItems:         menuItems,
+		textarea:          ta,
+		pathInput:         pi,
+		askInput:          askIn,
+		commitPromptInput: commitPrompt,
+		thread:            []threadItem{{text: "", mediaIDs: nil, media: nil}},
+		currentPost:       0,
+		xClient:           x.NewClient(cfg),
+		cfg:               cfg,
+		commits:           nil,
+		commitCursor:      0,
+		selectedCommits:   nil,
 	}, nil
 }
 
@@ -295,63 +318,263 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.textarea.Focus()
 						return m, textarea.Blink
 					} else if m.menuCursor == 1 {
-						// Smart Post - load commits
-						m.state = stateCommitBrowser
+						// Smart Post - show sub-menu
+						m.state = stateSmartMenu
 						m.isSmartPost = true
-						m.commitCursor = 0
-						m.selectedCommits = nil
-						m.status = "Loading commits..."
-						return m, m.loadCommits()
+						m.smartMenuCursor = 0
+						m.err = nil
+						return m, nil
 					}
 				}
 			}
 
-		case stateCommitBrowser:
+		case stateSmartMenu:
 			switch msg.String() {
 			case "esc", "q":
 				m.state = stateHome
+				m.err = nil
+				return m, nil
+			case "up", "k":
+				if m.smartMenuCursor > 0 {
+					m.smartMenuCursor--
+				}
+			case "down", "j":
+				if m.smartMenuCursor < 1 {
+					m.smartMenuCursor++
+				}
+			case "enter":
+				if m.smartMenuCursor == 0 {
+					// Browse Commits
+					m.state = stateCommitBrowser
+					m.commitCursor = 0
+					m.selectedCommits = nil
+					m.commitPromptInput.SetValue("")
+					m.commitPromptActive = false
+					m.commitScrollOffset = 0
+					m.commitSearch = ""
+					m.commitSearchActive = false
+					m.filteredCommits = nil
+					m.status = "Loading commits..."
+					return m, m.loadCommits()
+				} else {
+					// Ask
+					m.state = stateAskInput
+					m.askInput.SetValue("")
+					m.askInput.Focus()
+					m.status = "Loading commits..."
+					return m, tea.Batch(textinput.Blink, m.loadCommits())
+				}
+			case "ctrl+c":
+				return m, tea.Quit
+			}
+
+		case stateAskInput:
+			switch msg.String() {
+			case "esc":
+				m.state = stateSmartMenu
+				m.askInput.Blur()
+				m.err = nil
+				return m, nil
+			case "enter":
+				query := m.askInput.Value()
+				if query == "" {
+					m.err = fmt.Errorf("please enter a query")
+					return m, nil
+				}
+				m.askQuery = query
+				m.state = stateGenerating
+				m.status = "Claude is thinking..."
+				return m, m.generateFromQuery()
+			case "ctrl+c":
+				return m, tea.Quit
+			default:
+				var cmd tea.Cmd
+				m.askInput, cmd = m.askInput.Update(msg)
+				return m, cmd
+			}
+
+		case stateCommitBrowser:
+			maxVisible := 8
+
+			switch msg.String() {
+			case "esc":
+				if m.commitSearchActive {
+					m.commitSearchActive = false
+					m.commitSearch = ""
+					m.filterCommits()
+					m.commitCursor = 0
+					m.commitScrollOffset = 0
+					return m, nil
+				}
+				if m.commitPromptActive {
+					m.commitPromptActive = false
+					m.commitPromptInput.Blur()
+					return m, nil
+				}
+				m.state = stateSmartMenu
 				m.commits = nil
 				m.selectedCommits = nil
 				m.err = nil
 				return m, nil
+			case "q":
+				if m.commitSearchActive || m.commitPromptActive {
+					// Pass to input
+				} else {
+					m.state = stateSmartMenu
+					m.commits = nil
+					m.selectedCommits = nil
+					m.err = nil
+					return m, nil
+				}
+			case "/":
+				if m.commitPromptActive {
+					var cmd tea.Cmd
+					m.commitPromptInput, cmd = m.commitPromptInput.Update(msg)
+					return m, cmd
+				}
+				if m.commitSearchActive {
+					// Add to search
+					m.commitSearch += "/"
+					m.filterCommits()
+					m.commitCursor = 0
+					m.commitScrollOffset = 0
+					return m, nil
+				}
+				if m.commitSearch != "" {
+					// Clear search
+					m.commitSearch = ""
+					m.filterCommits()
+					m.commitCursor = 0
+					m.commitScrollOffset = 0
+				} else {
+					// Start new search
+					m.commitSearchActive = true
+				}
+				return m, nil
+			case "tab":
+				if m.commitSearchActive {
+					m.commitSearchActive = false
+					return m, nil
+				}
+				m.commitPromptActive = !m.commitPromptActive
+				if m.commitPromptActive {
+					m.commitPromptInput.Focus()
+					return m, textinput.Blink
+				} else {
+					m.commitPromptInput.Blur()
+					return m, nil
+				}
 			case "up", "k":
+				if m.commitPromptActive {
+					var cmd tea.Cmd
+					m.commitPromptInput, cmd = m.commitPromptInput.Update(msg)
+					return m, cmd
+				}
+				if m.commitSearchActive {
+					break
+				}
 				if m.commitCursor > 0 {
 					m.commitCursor--
-				}
-			case "down", "j":
-				if m.commitCursor < len(m.commits)-1 {
-					m.commitCursor++
-				}
-			case " ":
-				// Toggle selection
-				idx := m.commitCursor
-				found := false
-				for i, s := range m.selectedCommits {
-					if s == idx {
-						m.selectedCommits = append(m.selectedCommits[:i], m.selectedCommits[i+1:]...)
-						found = true
-						break
+					// Scroll up if needed
+					if m.commitCursor < m.commitScrollOffset {
+						m.commitScrollOffset = m.commitCursor
 					}
 				}
-				if !found {
-					m.selectedCommits = append(m.selectedCommits, idx)
+			case "down", "j":
+				if m.commitPromptActive {
+					var cmd tea.Cmd
+					m.commitPromptInput, cmd = m.commitPromptInput.Update(msg)
+					return m, cmd
+				}
+				if m.commitSearchActive {
+					break
+				}
+				if m.commitCursor < len(m.filteredCommits)-1 {
+					m.commitCursor++
+					// Scroll down if needed
+					if m.commitCursor >= m.commitScrollOffset+maxVisible {
+						m.commitScrollOffset = m.commitCursor - maxVisible + 1
+					}
+				}
+			case " ":
+				if m.commitSearchActive {
+					m.commitSearch += " "
+					m.filterCommits()
+					return m, nil
+				}
+				if m.commitPromptActive {
+					var cmd tea.Cmd
+					m.commitPromptInput, cmd = m.commitPromptInput.Update(msg)
+					return m, cmd
+				}
+				// Toggle selection using filtered index
+				if m.commitCursor < len(m.filteredCommits) {
+					realIdx := m.filteredCommits[m.commitCursor]
+					found := false
+					for i, s := range m.selectedCommits {
+						if s == realIdx {
+							m.selectedCommits = append(m.selectedCommits[:i], m.selectedCommits[i+1:]...)
+							found = true
+							break
+						}
+					}
+					if !found {
+						m.selectedCommits = append(m.selectedCommits, realIdx)
+					}
 				}
 			case "enter":
-				// Generate AI suggestion
-				if len(m.selectedCommits) == 0 {
-					m.selectedCommits = []int{m.commitCursor}
+				if m.commitSearchActive {
+					m.commitSearchActive = false
+					return m, nil
+				}
+				if m.commitPromptActive {
+					m.commitPromptActive = false
+					m.commitPromptInput.Blur()
+				}
+				// Generate AI suggestion using real indices
+				if len(m.selectedCommits) == 0 && m.commitCursor < len(m.filteredCommits) {
+					m.selectedCommits = []int{m.filteredCommits[m.commitCursor]}
 				}
 				m.state = stateGenerating
 				m.status = "Generating suggestion..."
 				return m, m.generateSuggestion()
 			case "ctrl+c":
 				return m, tea.Quit
+			case "backspace":
+				if m.commitSearchActive && len(m.commitSearch) > 0 {
+					m.commitSearch = m.commitSearch[:len(m.commitSearch)-1]
+					m.filterCommits()
+					m.commitCursor = 0
+					m.commitScrollOffset = 0
+					return m, nil
+				}
+				if m.commitPromptActive {
+					var cmd tea.Cmd
+					m.commitPromptInput, cmd = m.commitPromptInput.Update(msg)
+					return m, cmd
+				}
+			default:
+				if m.commitSearchActive {
+					// Add character to search
+					if len(msg.String()) == 1 {
+						m.commitSearch += msg.String()
+						m.filterCommits()
+						m.commitCursor = 0
+						m.commitScrollOffset = 0
+					}
+					return m, nil
+				}
+				if m.commitPromptActive {
+					var cmd tea.Cmd
+					m.commitPromptInput, cmd = m.commitPromptInput.Update(msg)
+					return m, cmd
+				}
 			}
 
 		case stateSmartCompose:
 			switch msg.String() {
 			case "esc":
-				m.state = stateCommitBrowser
+				m.state = stateSmartMenu
 				m.textarea.Blur()
 				m.err = nil
 				return m, nil
@@ -519,13 +742,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.state = stateHome
 		} else {
 			m.commits = msg.commits
+			// Initialize filtered commits to show all
+			m.filteredCommits = make([]int, len(msg.commits))
+			for i := range msg.commits {
+				m.filteredCommits[i] = i
+			}
 		}
 
 	case aiSuggestionMsg:
 		m.status = ""
 		if msg.err != nil {
 			m.err = msg.err
-			m.state = stateCommitBrowser
+			m.state = stateSmartMenu
 		} else {
 			m.aiSuggestion = msg.suggestion
 			m.state = stateSmartCompose
@@ -633,11 +861,91 @@ func (m Model) View() string {
 			{"q", "quit"},
 		}))
 
+	case stateSmartMenu:
+		b.WriteString(subtitleStyle.Render("Smart Post"))
+		b.WriteString("\n\n")
+
+		smartMenuItems := []struct {
+			title string
+			desc  string
+		}{
+			{"Browse Commits", "Pick specific commits to post about"},
+			{"Ask", "Describe what you want to post about"},
+		}
+
+		for i, item := range smartMenuItems {
+			if i == m.smartMenuCursor {
+				b.WriteString(bulletStyle.Render("▸ "))
+				b.WriteString(selectedStyle.Render(item.title))
+				b.WriteString("\n")
+				b.WriteString(selectedDescStyle.Render(item.desc))
+			} else {
+				b.WriteString(dimBulletStyle.Render("  "))
+				b.WriteString(menuItemStyle.Render(item.title))
+				b.WriteString("\n")
+				b.WriteString(menuDescStyle.Render(item.desc))
+			}
+			b.WriteString("\n\n")
+		}
+
+		b.WriteString(m.renderHelpBar([]helpItem{
+			{"↑↓", "navigate"},
+			{"enter", "select"},
+			{"esc", "back"},
+		}))
+
+	case stateAskInput:
+		b.WriteString(subtitleStyle.Render("Smart Post"))
+		b.WriteString("  ")
+		b.WriteString(aiTagStyle.Render(" Ask "))
+		b.WriteString("\n\n")
+
+		b.WriteString(dimStyle.Render("What would you like to post about?"))
+		b.WriteString("\n\n")
+
+		b.WriteString(m.askInput.View())
+		b.WriteString("\n\n")
+
+		if m.err != nil {
+			b.WriteString(errorStyle.Render("✗ " + m.err.Error()))
+			b.WriteString("\n\n")
+		}
+
+		b.WriteString(dimStyle.Render("Examples:"))
+		b.WriteString("\n")
+		b.WriteString(dimStyle.Render("  • What did I accomplish today?"))
+		b.WriteString("\n")
+		b.WriteString(dimStyle.Render("  • What good practices am I using?"))
+		b.WriteString("\n")
+		b.WriteString(dimStyle.Render("  • Summarize my recent refactoring work"))
+		b.WriteString("\n\n")
+
+		b.WriteString(m.renderHelpBar([]helpItem{
+			{"enter", "generate"},
+			{"esc", "back"},
+		}))
+
 	case stateCommitBrowser:
+		maxVisible := 8
+
 		b.WriteString(subtitleStyle.Render("Smart Post"))
 		b.WriteString("  ")
 		b.WriteString(dimStyle.Render("Select commits to post about"))
 		b.WriteString("\n\n")
+
+		// Search bar
+		if m.commitSearchActive {
+			b.WriteString(dimStyle.Render("/"))
+			b.WriteString(selectedStyle.Render(m.commitSearch))
+			b.WriteString(selectedStyle.Render("▌"))
+			b.WriteString("\n\n")
+		} else if m.commitSearch != "" {
+			b.WriteString(dimStyle.Render("/"))
+			b.WriteString(menuItemStyle.Render(m.commitSearch))
+			b.WriteString("  ")
+			b.WriteString(dimStyle.Render(fmt.Sprintf("(%d matches)", len(m.filteredCommits))))
+			b.WriteString("\n\n")
+		}
 
 		if m.status != "" {
 			b.WriteString(statusStyle.Render("● " + m.status))
@@ -647,11 +955,27 @@ func (m Model) View() string {
 			b.WriteString("\n")
 		} else if len(m.commits) == 0 {
 			b.WriteString(dimStyle.Render("No commits found in this repository"))
+		} else if len(m.filteredCommits) == 0 {
+			b.WriteString(dimStyle.Render("No matching commits"))
 		} else {
-			for i, commit := range m.commits {
+			// Show scroll indicator if there are more commits above
+			if m.commitScrollOffset > 0 {
+				b.WriteString(dimStyle.Render(fmt.Sprintf("  ↑ %d more above\n", m.commitScrollOffset)))
+			}
+
+			// Show visible window of commits
+			end := m.commitScrollOffset + maxVisible
+			if end > len(m.filteredCommits) {
+				end = len(m.filteredCommits)
+			}
+
+			for i := m.commitScrollOffset; i < end; i++ {
+				realIdx := m.filteredCommits[i]
+				commit := m.commits[realIdx]
+
 				isSelected := false
 				for _, s := range m.selectedCommits {
-					if s == i {
+					if s == realIdx {
 						isSelected = true
 						break
 					}
@@ -679,18 +1003,40 @@ func (m Model) View() string {
 				b.WriteString("\n")
 			}
 
+			// Show scroll indicator if there are more commits below
+			remaining := len(m.filteredCommits) - end
+			if remaining > 0 {
+				b.WriteString(dimStyle.Render(fmt.Sprintf("  ↓ %d more below\n", remaining)))
+			}
+
 			if len(m.selectedCommits) > 0 {
 				b.WriteString("\n")
 				b.WriteString(dimStyle.Render(fmt.Sprintf("%d commit(s) selected", len(m.selectedCommits))))
 			}
+
+			// Prompt input
+			b.WriteString("\n\n")
+			b.WriteString(inputLabelStyle.Render("Prompt "))
+			b.WriteString(dimStyle.Render("(optional)"))
+			b.WriteString("\n")
+			if m.commitPromptActive {
+				b.WriteString(activeBoxStyle.Render(m.commitPromptInput.View()))
+			} else {
+				b.WriteString(boxStyle.Render(m.commitPromptInput.View()))
+			}
 		}
 
 		b.WriteString("\n")
+		searchHelp := "search"
+		if !m.commitSearchActive && m.commitSearch != "" {
+			searchHelp = "clear"
+		}
 		b.WriteString(m.renderHelpBar([]helpItem{
 			{"↑↓", "navigate"},
 			{"space", "select"},
+			{"/", searchHelp},
+			{"tab", "prompt"},
 			{"enter", "generate"},
-			{"esc", "back"},
 		}))
 
 	case stateGenerating:
@@ -893,6 +1239,25 @@ func (m Model) renderHelpBar(items []helpItem) string {
 	return helpBarStyle.Render(strings.Join(parts, "   "))
 }
 
+func (m *Model) filterCommits() {
+	if m.commitSearch == "" {
+		// Show all commits
+		m.filteredCommits = make([]int, len(m.commits))
+		for i := range m.commits {
+			m.filteredCommits[i] = i
+		}
+		return
+	}
+
+	search := strings.ToLower(m.commitSearch)
+	m.filteredCommits = nil
+	for i, commit := range m.commits {
+		if strings.Contains(strings.ToLower(commit.Subject), search) {
+			m.filteredCommits = append(m.filteredCommits, i)
+		}
+	}
+}
+
 func (m Model) hasContent() bool {
 	for _, item := range m.thread {
 		if strings.TrimSpace(item.text) != "" || len(item.mediaIDs) > 0 {
@@ -904,7 +1269,7 @@ func (m Model) hasContent() bool {
 
 func (m Model) loadCommits() tea.Cmd {
 	return func() tea.Msg {
-		commits, err := git.GetRecentCommits(15)
+		commits, err := git.GetRecentCommits(50)
 		if err != nil {
 			return commitsLoadedMsg{err: err}
 		}
@@ -913,6 +1278,7 @@ func (m Model) loadCommits() tea.Cmd {
 }
 
 func (m Model) generateSuggestion() tea.Cmd {
+	prompt := m.commitPromptInput.Value()
 	return func() tea.Msg {
 		var selectedCommits []git.Commit
 		for _, idx := range m.selectedCommits {
@@ -925,7 +1291,21 @@ func (m Model) generateSuggestion() tea.Cmd {
 			return aiSuggestionMsg{err: fmt.Errorf("claude CLI not found - install Claude Code first")}
 		}
 
-		suggestion, err := ai.GeneratePostSuggestion(selectedCommits)
+		suggestion, err := ai.GeneratePostSuggestion(selectedCommits, prompt)
+		if err != nil {
+			return aiSuggestionMsg{err: err}
+		}
+		return aiSuggestionMsg{suggestion: suggestion}
+	}
+}
+
+func (m Model) generateFromQuery() tea.Cmd {
+	return func() tea.Msg {
+		if !ai.IsClaudeAvailable() {
+			return aiSuggestionMsg{err: fmt.Errorf("claude CLI not found - install Claude Code first")}
+		}
+
+		suggestion, err := ai.GenerateFromQuery(m.askQuery, m.commits)
 		if err != nil {
 			return aiSuggestionMsg{err: err}
 		}
