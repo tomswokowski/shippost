@@ -7,6 +7,12 @@ import (
 	"time"
 )
 
+// IsGitRepo checks if the current directory is inside a git repository
+func IsGitRepo() bool {
+	err := exec.Command("git", "rev-parse", "--git-dir").Run()
+	return err == nil
+}
+
 // Commit represents a git commit
 type Commit struct {
 	Hash      string

@@ -5,7 +5,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/tom/shippost/git"
+	"github.com/tomswokowski/shippost/git"
 )
 
 // GeneratePostSuggestion uses Claude Code CLI to generate a post suggestion

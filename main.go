@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/tom/shippost/config"
-	"github.com/tom/shippost/tui"
+	"github.com/tomswokowski/shippost/config"
+	"github.com/tomswokowski/shippost/tui"
 )
 
-const version = "0.2.0"
+// version is set by goreleaser at build time
+var version = "dev"
 
 func main() {
 	// Define flags

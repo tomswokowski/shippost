@@ -13,7 +13,7 @@ import (
 	"strings"
 
 	"github.com/dghubble/oauth1"
-	"github.com/tom/shippost/config"
+	"github.com/tomswokowski/shippost/config"
 )
 
 const (

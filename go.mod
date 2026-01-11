@@ -1,4 +1,4 @@
-module github.com/tom/shippost
+module github.com/tomswokowski/shippost
 
 go 1.24.0
 

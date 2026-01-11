@@ -10,10 +10,10 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/tom/shippost/ai"
-	"github.com/tom/shippost/config"
-	"github.com/tom/shippost/git"
-	"github.com/tom/shippost/x"
+	"github.com/tomswokowski/shippost/ai"
+	"github.com/tomswokowski/shippost/config"
+	"github.com/tomswokowski/shippost/git"
+	"github.com/tomswokowski/shippost/x"
 )
 
 // Styles
@@ -194,6 +194,7 @@ type Model struct {
 	commitSearchActive bool
 	filteredCommits    []int // indices into commits slice
 	allowThread        bool  // whether to generate threads or single posts
+	inGitRepo          bool  // whether we're in a git repository
 }
 
 // Messages
@@ -252,8 +253,14 @@ func New() (Model, error) {
 	commitPrompt.ShowLineNumbers = false
 
 	claudeAvailable := ai.IsClaudeAvailable()
-	smartPostDesc := "AI-powered posts to X from your commits"
-	if !claudeAvailable {
+	inGitRepo := git.IsGitRepo()
+
+	// Determine Smart Post availability and description
+	smartPostEnabled := claudeAvailable && inGitRepo
+	smartPostDesc := "AI-powered posts from your git commits"
+	if !inGitRepo {
+		smartPostDesc = "Not in a git repository"
+	} else if !claudeAvailable {
 		smartPostDesc = "Requires Claude Code CLI (not installed)"
 	}
 
@@ -266,7 +273,7 @@ func New() (Model, error) {
 		{
 			title:       "Smart Post",
 			description: smartPostDesc,
-			enabled:     claudeAvailable,
+			enabled:     smartPostEnabled,
 		},
 	}
 
@@ -286,6 +293,7 @@ func New() (Model, error) {
 		commitCursor:      0,
 		selectedCommits:   nil,
 		allowThread:       true,
+		inGitRepo:         inGitRepo,
 	}, nil
 }
 

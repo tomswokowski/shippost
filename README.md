@@ -1,20 +1,41 @@
 # shippost
 
-Post to X from your terminal.
+Post to X from your terminal with AI-powered suggestions from your git commits.
+
+## Features
+
+- **Quick Post** - Write and post directly to X
+- **Smart Post** - AI-powered posts from your git commits using Claude
+  - Browse commits and select what to post about
+  - Ask natural language questions like "What did I accomplish today?"
+  - Generate threads or single posts
+- **Thread support** - Create multi-post threads
+- **Media attachments** - Attach images to your posts
 
 ## Installation
 
-```bash
-go install github.com/tom/shippost@latest
-```
-
-Or build from source:
+### Quick install (Linux/macOS)
 
 ```bash
-git clone https://github.com/tom/shippost.git
-cd shippost
-go build -o shippost
+curl -fsSL https://raw.githubusercontent.com/tomswokowski/shippost/main/install.sh | bash
 ```
+
+### Homebrew (macOS/Linux)
+
+```bash
+brew tap tomswokowski/tap
+brew install shippost
+```
+
+### Go install
+
+```bash
+go install github.com/tomswokowski/shippost@latest
+```
+
+### Download binary
+
+Download the latest release for your platform from [GitHub Releases](https://github.com/tomswokowski/shippost/releases).
 
 ## Setup
 
@@ -42,34 +63,69 @@ shippost --setup
 
 Enter your credentials when prompted. They're stored securely at `~/.config/shippost/config.json` with restricted permissions.
 
-**Security note:** Secrets are entered via hidden input and never logged.
+### 4. (Optional) Install Claude Code
+
+For AI-powered Smart Post features, install [Claude Code](https://claude.ai/code):
+
+```bash
+npm install -g @anthropic-ai/claude-code
+```
 
 ## Usage
 
 ```bash
-# Post to X
-shippost "Just shipped a new feature!"
+# Launch the TUI
+shippost
 
-# Multiple words work without quotes too
-shippost Working on some cool stuff
+# Configure credentials
+shippost --setup
 
 # Show help
 shippost --help
-
-# Show version
-shippost --version
 ```
+
+### Keyboard shortcuts
+
+**Home screen:**
+- `↑/↓` or `j/k` - Navigate menu
+- `Enter` - Select
+- `q` - Quit
+
+**Quick Post:**
+- `ctrl+s` - Send post
+- `ctrl+o` - Attach image
+- `ctrl+n` - Add post to thread
+- `ctrl+d` - Delete post from thread
+- `ctrl+↑/↓` - Navigate thread
+- `esc` - Back
+
+**Smart Post (Browse Commits):**
+- `↑/↓` - Navigate commits
+- `Space` - Select/deselect commit
+- `/` - Search commits
+- `Tab` - Focus prompt input
+- `ctrl+t` - Toggle single/thread mode
+- `Enter` - Generate post
+
+**Smart Post (Compose):**
+- `ctrl+s` - Send
+- `ctrl+r` - Regenerate
+- `ctrl+n` - Add post
+- `ctrl+←/→` - Navigate thread
 
 ## Security
 
 - Config file is stored with `0600` permissions (owner read/write only)
 - Config directory uses `0700` permissions
 - Credentials are never logged or printed
-- Setup uses hidden input for secrets (won't appear in shell history)
+- Setup uses hidden input for secrets
 
-## Future Plans
+## Requirements
 
-- TUI mode for browsing git history and drafting posts
-- AI-powered post suggestions
-- Post threads
-- Media attachments
+- X API credentials (Free tier available)
+- Claude Code CLI (optional, for Smart Post features)
+- Git repository (optional, for Smart Post features)
+
+## License
+
+MIT
