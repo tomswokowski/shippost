@@ -169,8 +169,8 @@ type Model struct {
 	menuItems          []menuItem
 	textarea           textarea.Model
 	pathInput          textinput.Model
-	askInput           textinput.Model
-	commitPromptInput  textinput.Model
+	askInput           textarea.Model
+	commitPromptInput  textarea.Model
 	thread             []threadItem
 	currentPost        int
 	status             string
@@ -193,6 +193,7 @@ type Model struct {
 	commitSearch       string
 	commitSearchActive bool
 	filteredCommits    []int // indices into commits slice
+	allowThread        bool  // whether to generate threads or single posts
 }
 
 // Messages
@@ -213,8 +214,8 @@ type commitsLoadedMsg struct {
 }
 
 type aiSuggestionMsg struct {
-	suggestion string
-	err        error
+	suggestions []string // Thread of posts
+	err         error
 }
 
 // New creates a new TUI model
@@ -236,15 +237,19 @@ func New() (Model, error) {
 	pi.Width = 50
 	pi.CharLimit = 256
 
-	askIn := textinput.New()
+	askIn := textarea.New()
 	askIn.Placeholder = "What did I accomplish today?"
-	askIn.Width = 50
-	askIn.CharLimit = 256
+	askIn.SetWidth(55)
+	askIn.SetHeight(3)
+	askIn.CharLimit = 500
+	askIn.ShowLineNumbers = false
 
-	commitPrompt := textinput.New()
+	commitPrompt := textarea.New()
 	commitPrompt.Placeholder = "Optional: focus on performance, make it casual, etc."
-	commitPrompt.Width = 55
-	commitPrompt.CharLimit = 256
+	commitPrompt.SetWidth(55)
+	commitPrompt.SetHeight(2)
+	commitPrompt.CharLimit = 500
+	commitPrompt.ShowLineNumbers = false
 
 	claudeAvailable := ai.IsClaudeAvailable()
 	smartPostDesc := "AI-powered posts to X from your commits"
@@ -280,6 +285,7 @@ func New() (Model, error) {
 		commits:           nil,
 		commitCursor:      0,
 		selectedCommits:   nil,
+		allowThread:       true,
 	}, nil
 }
 
@@ -362,7 +368,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.askInput.SetValue("")
 					m.askInput.Focus()
 					m.status = "Loading commits..."
-					return m, tea.Batch(textinput.Blink, m.loadCommits())
+					return m, tea.Batch(textarea.Blink, m.loadCommits())
 				}
 			case "ctrl+c":
 				return m, tea.Quit
@@ -375,7 +381,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.askInput.Blur()
 				m.err = nil
 				return m, nil
-			case "enter":
+			case "ctrl+enter":
 				query := m.askInput.Value()
 				if query == "" {
 					m.err = fmt.Errorf("please enter a query")
@@ -387,11 +393,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.generateFromQuery()
 			case "ctrl+c":
 				return m, tea.Quit
-			default:
-				var cmd tea.Cmd
-				m.askInput, cmd = m.askInput.Update(msg)
-				return m, cmd
+			case "ctrl+t":
+				// Toggle thread mode
+				m.allowThread = !m.allowThread
+				return m, nil
 			}
+			var cmd tea.Cmd
+			m.askInput, cmd = m.askInput.Update(msg)
+			return m, cmd
 
 		case stateCommitBrowser:
 			maxVisible := 8
@@ -459,7 +468,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.commitPromptActive = !m.commitPromptActive
 				if m.commitPromptActive {
 					m.commitPromptInput.Focus()
-					return m, textinput.Blink
+					return m, textarea.Blink
 				} else {
 					m.commitPromptInput.Blur()
 					return m, nil
@@ -540,6 +549,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.generateSuggestion()
 			case "ctrl+c":
 				return m, tea.Quit
+			case "ctrl+t":
+				// Toggle thread mode
+				m.allowThread = !m.allowThread
+				return m, nil
 			case "backspace":
 				if m.commitSearchActive && len(m.commitSearch) > 0 {
 					m.commitSearch = m.commitSearch[:len(m.commitSearch)-1]
@@ -579,7 +592,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.err = nil
 				return m, nil
 			case "ctrl+s":
-				m.thread[0].text = m.textarea.Value()
+				m.thread[m.currentPost].text = m.textarea.Value()
 				if !m.hasContent() {
 					m.err = fmt.Errorf("post cannot be empty")
 					return m, nil
@@ -593,11 +606,44 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.status = "Regenerating..."
 				return m, m.generateSuggestion()
 			case "ctrl+o":
-				m.thread[0].text = m.textarea.Value()
+				m.thread[m.currentPost].text = m.textarea.Value()
 				m.state = stateMediaInput
 				m.pathInput.SetValue("")
 				m.pathInput.Focus()
 				return m, textinput.Blink
+			case "ctrl+n":
+				// Add new post to thread
+				m.thread[m.currentPost].text = m.textarea.Value()
+				m.thread = append(m.thread, threadItem{text: "", mediaIDs: nil, media: nil})
+				m.currentPost = len(m.thread) - 1
+				m.textarea.SetValue("")
+				return m, nil
+			case "ctrl+d":
+				// Delete current post if more than one
+				if len(m.thread) > 1 {
+					m.thread = append(m.thread[:m.currentPost], m.thread[m.currentPost+1:]...)
+					if m.currentPost >= len(m.thread) {
+						m.currentPost = len(m.thread) - 1
+					}
+					m.textarea.SetValue(m.thread[m.currentPost].text)
+				}
+				return m, nil
+			case "ctrl+left", "ctrl+p":
+				// Previous post
+				if m.currentPost > 0 {
+					m.thread[m.currentPost].text = m.textarea.Value()
+					m.currentPost--
+					m.textarea.SetValue(m.thread[m.currentPost].text)
+				}
+				return m, nil
+			case "ctrl+right", "ctrl+]":
+				// Next post
+				if m.currentPost < len(m.thread)-1 {
+					m.thread[m.currentPost].text = m.textarea.Value()
+					m.currentPost++
+					m.textarea.SetValue(m.thread[m.currentPost].text)
+				}
+				return m, nil
 			case "ctrl+c":
 				return m, tea.Quit
 			}
@@ -755,11 +801,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.err = msg.err
 			m.state = stateSmartMenu
 		} else {
-			m.aiSuggestion = msg.suggestion
+			// Build thread from suggestions
+			m.thread = nil
+			for _, suggestion := range msg.suggestions {
+				m.thread = append(m.thread, threadItem{text: suggestion, mediaIDs: nil, media: nil})
+			}
+			if len(m.thread) == 0 {
+				m.thread = []threadItem{{text: "", mediaIDs: nil, media: nil}}
+			}
 			m.state = stateSmartCompose
-			m.thread = []threadItem{{text: msg.suggestion, mediaIDs: nil, media: nil}}
 			m.currentPost = 0
-			m.textarea.SetValue(msg.suggestion)
+			m.textarea.SetValue(m.thread[0].text)
 			m.textarea.Focus()
 			return m, textarea.Blink
 		}
@@ -903,13 +955,31 @@ func (m Model) View() string {
 		b.WriteString(dimStyle.Render("What would you like to post about?"))
 		b.WriteString("\n\n")
 
-		b.WriteString(m.askInput.View())
+		b.WriteString(activeBoxStyle.Render(m.askInput.View()))
 		b.WriteString("\n\n")
 
 		if m.err != nil {
 			b.WriteString(errorStyle.Render("✗ " + m.err.Error()))
 			b.WriteString("\n\n")
 		}
+
+		// Thread mode toggle
+		if m.allowThread {
+			b.WriteString(selectedStyle.Render("● "))
+			b.WriteString(menuItemStyle.Render("Allow threads"))
+			b.WriteString(dimStyle.Render(" (default)"))
+			b.WriteString("\n")
+			b.WriteString(dimStyle.Render("○ "))
+			b.WriteString(dimStyle.Render("Single post only"))
+		} else {
+			b.WriteString(dimStyle.Render("○ "))
+			b.WriteString(dimStyle.Render("Allow threads"))
+			b.WriteString(dimStyle.Render(" (default)"))
+			b.WriteString("\n")
+			b.WriteString(selectedStyle.Render("● "))
+			b.WriteString(menuItemStyle.Render("Single post only"))
+		}
+		b.WriteString("\n\n")
 
 		b.WriteString(dimStyle.Render("Examples:"))
 		b.WriteString("\n")
@@ -921,7 +991,8 @@ func (m Model) View() string {
 		b.WriteString("\n\n")
 
 		b.WriteString(m.renderHelpBar([]helpItem{
-			{"enter", "generate"},
+			{"ctrl+enter", "generate"},
+			{"ctrl+t", "single/thread"},
 			{"esc", "back"},
 		}))
 
@@ -1024,9 +1095,28 @@ func (m Model) View() string {
 			} else {
 				b.WriteString(boxStyle.Render(m.commitPromptInput.View()))
 			}
+
 		}
 
-		b.WriteString("\n")
+		// Thread mode toggle (always visible)
+		b.WriteString("\n\n")
+		if m.allowThread {
+			b.WriteString(selectedStyle.Render("● "))
+			b.WriteString(menuItemStyle.Render("Allow threads"))
+			b.WriteString(dimStyle.Render(" (default)"))
+			b.WriteString("\n")
+			b.WriteString(dimStyle.Render("○ "))
+			b.WriteString(dimStyle.Render("Single post only"))
+		} else {
+			b.WriteString(dimStyle.Render("○ "))
+			b.WriteString(dimStyle.Render("Allow threads"))
+			b.WriteString(dimStyle.Render(" (default)"))
+			b.WriteString("\n")
+			b.WriteString(selectedStyle.Render("● "))
+			b.WriteString(menuItemStyle.Render("Single post only"))
+		}
+
+		b.WriteString("\n\n")
 		searchHelp := "search"
 		if !m.commitSearchActive && m.commitSearch != "" {
 			searchHelp = "clear"
@@ -1036,7 +1126,9 @@ func (m Model) View() string {
 			{"space", "select"},
 			{"/", searchHelp},
 			{"tab", "prompt"},
+			{"ctrl+t", "single/thread"},
 			{"enter", "generate"},
+			{"esc", "back"},
 		}))
 
 	case stateGenerating:
@@ -1050,7 +1142,28 @@ func (m Model) View() string {
 		b.WriteString(subtitleStyle.Render("Smart Post"))
 		b.WriteString("  ")
 		b.WriteString(aiTagStyle.Render(" AI "))
-		b.WriteString("\n\n")
+		if len(m.thread) > 1 {
+			b.WriteString("  ")
+			b.WriteString(threadNumStyle.Render(fmt.Sprintf(" THREAD %d/%d ", m.currentPost+1, len(m.thread))))
+		}
+		b.WriteString("\n")
+
+		// Show thread indicator dots when multiple posts
+		if len(m.thread) > 1 {
+			b.WriteString("\n")
+			for i := range m.thread {
+				if i == m.currentPost {
+					b.WriteString(selectedStyle.Render("●"))
+				} else {
+					b.WriteString(dimStyle.Render("○"))
+				}
+				if i < len(m.thread)-1 {
+					b.WriteString(dimStyle.Render("─"))
+				}
+			}
+			b.WriteString("\n")
+		}
+		b.WriteString("\n")
 
 		b.WriteString(activeBoxStyle.Render(m.textarea.View()))
 		b.WriteString("\n")
@@ -1066,9 +1179,9 @@ func (m Model) View() string {
 		b.WriteString(countStyle.Render(fmt.Sprintf("%d", charCount)))
 		b.WriteString(helpTextStyle.Render("/280"))
 
-		if len(m.thread[0].media) > 0 {
+		if len(m.thread[m.currentPost].media) > 0 {
 			b.WriteString("  ")
-			for _, path := range m.thread[0].media {
+			for _, path := range m.thread[m.currentPost].media {
 				b.WriteString(mediaTagStyle.Render(" 📎 " + filepath.Base(path) + " "))
 				b.WriteString(" ")
 			}
@@ -1080,12 +1193,18 @@ func (m Model) View() string {
 		}
 
 		b.WriteString("\n")
-		b.WriteString(m.renderHelpBar([]helpItem{
+		helpItems := []helpItem{
 			{"ctrl+s", "send"},
-			{"ctrl+r", "regenerate"},
+			{"ctrl+r", "regen"},
 			{"ctrl+o", "attach"},
-			{"esc", "back"},
-		}))
+			{"ctrl+n", "add"},
+		}
+		if len(m.thread) > 1 {
+			helpItems = append(helpItems, helpItem{"ctrl+d", "delete"})
+			helpItems = append(helpItems, helpItem{"ctrl+←→", "nav"})
+		}
+		helpItems = append(helpItems, helpItem{"esc", "back"})
+		b.WriteString(m.renderHelpBar(helpItems))
 
 	case stateCompose, statePosting:
 		if len(m.thread) > 1 {
@@ -1172,6 +1291,9 @@ func (m Model) View() string {
 			{"ctrl+s", "send"},
 			{"ctrl+o", "attach"},
 			{"ctrl+n", "add"},
+		}
+		if len(m.thread[m.currentPost].media) > 0 {
+			helpItems = append(helpItems, helpItem{"ctrl+x", "remove media"})
 		}
 		if len(m.thread) > 1 {
 			helpItems = append(helpItems, helpItem{"ctrl+d", "delete"})
@@ -1279,6 +1401,7 @@ func (m Model) loadCommits() tea.Cmd {
 
 func (m Model) generateSuggestion() tea.Cmd {
 	prompt := m.commitPromptInput.Value()
+	allowThread := m.allowThread
 	return func() tea.Msg {
 		var selectedCommits []git.Commit
 		for _, idx := range m.selectedCommits {
@@ -1291,25 +1414,28 @@ func (m Model) generateSuggestion() tea.Cmd {
 			return aiSuggestionMsg{err: fmt.Errorf("claude CLI not found - install Claude Code first")}
 		}
 
-		suggestion, err := ai.GeneratePostSuggestion(selectedCommits, prompt)
+		suggestions, err := ai.GeneratePostSuggestion(selectedCommits, prompt, allowThread)
 		if err != nil {
 			return aiSuggestionMsg{err: err}
 		}
-		return aiSuggestionMsg{suggestion: suggestion}
+		return aiSuggestionMsg{suggestions: suggestions}
 	}
 }
 
 func (m Model) generateFromQuery() tea.Cmd {
+	query := m.askQuery
+	commits := m.commits
+	allowThread := m.allowThread
 	return func() tea.Msg {
 		if !ai.IsClaudeAvailable() {
 			return aiSuggestionMsg{err: fmt.Errorf("claude CLI not found - install Claude Code first")}
 		}
 
-		suggestion, err := ai.GenerateFromQuery(m.askQuery, m.commits)
+		suggestions, err := ai.GenerateFromQuery(query, commits, allowThread)
 		if err != nil {
 			return aiSuggestionMsg{err: err}
 		}
-		return aiSuggestionMsg{suggestion: suggestion}
+		return aiSuggestionMsg{suggestions: suggestions}
 	}
 }
 

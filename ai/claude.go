@@ -9,16 +9,27 @@ import (
 )
 
 // GeneratePostSuggestion uses Claude Code CLI to generate a post suggestion
-func GeneratePostSuggestion(commits []git.Commit, prompt string) (string, error) {
+// Returns a slice of posts (thread) - may be single post or multiple
+func GeneratePostSuggestion(commits []git.Commit, prompt string, allowThread bool) ([]string, error) {
 	if len(commits) == 0 {
-		return "", fmt.Errorf("no commits provided")
+		return nil, fmt.Errorf("no commits provided")
 	}
 
 	// Build context from commits
 	var context strings.Builder
-	context.WriteString("Based on the following git commit(s), write a short, engaging post for X (formerly Twitter). ")
-	context.WriteString("Keep it under 280 characters. Be concise and highlight what was accomplished. ")
-	context.WriteString("Don't use hashtags unless they're really relevant. Sound natural, not promotional.\n\n")
+	context.WriteString("Based on the following git commit(s), write an engaging post for X (formerly Twitter).\n\n")
+	context.WriteString("CRITICAL RULES:\n")
+	context.WriteString("- EACH post MUST be UNDER 280 characters - this is a hard limit, count carefully!\n")
+	context.WriteString("- NEVER cut off in the middle of a word - if you're close to 280, end the sentence earlier\n")
+	if allowThread {
+		context.WriteString("- If the content is rich enough, write a thread (2-4 posts)\n")
+		context.WriteString("- If a single post works, that's fine too\n")
+	} else {
+		context.WriteString("- Write exactly ONE post, not a thread\n")
+	}
+	context.WriteString("- Be concise and highlight what was accomplished\n")
+	context.WriteString("- Don't use hashtags unless really relevant\n")
+	context.WriteString("- Sound natural, not promotional\n\n")
 
 	if prompt != "" {
 		context.WriteString("User's guidance: ")
@@ -36,25 +47,26 @@ func GeneratePostSuggestion(commits []git.Commit, prompt string) (string, error)
 		context.WriteString("\n")
 	}
 
-	context.WriteString("Write only the post text, nothing else:")
+	if allowThread {
+		context.WriteString("Write only the post text. If writing a thread, separate posts with ---\n")
+		context.WriteString("Example thread format:\n")
+		context.WriteString("First post here\n---\nSecond post here\n---\nThird post here\n\n")
+	} else {
+		context.WriteString("Write only the post text (one post, no thread).\n\n")
+	}
+	context.WriteString("Output:")
 
 	// Call claude CLI
 	cmd := exec.Command("claude", "-p", context.String())
 	output, err := cmd.Output()
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
-			return "", fmt.Errorf("claude error: %s", string(exitErr.Stderr))
+			return nil, fmt.Errorf("claude error: %s", string(exitErr.Stderr))
 		}
-		return "", fmt.Errorf("failed to run claude: %w", err)
+		return nil, fmt.Errorf("failed to run claude: %w", err)
 	}
 
-	// Clean up the response
-	suggestion := strings.TrimSpace(string(output))
-
-	// Remove quotes if the response is wrapped in them
-	suggestion = strings.Trim(suggestion, "\"'")
-
-	return suggestion, nil
+	return parseThreadResponse(string(output)), nil
 }
 
 // GeneratePostFromDiff uses Claude Code CLI to generate a post from a diff
@@ -93,9 +105,10 @@ func GeneratePostFromDiff(commitHash string) (string, error) {
 }
 
 // GenerateFromQuery uses natural language query to generate a post from commits
-func GenerateFromQuery(query string, commits []git.Commit) (string, error) {
+// Returns a slice of posts (thread) - may be single post or multiple
+func GenerateFromQuery(query string, commits []git.Commit, allowThread bool) ([]string, error) {
 	if query == "" {
-		return "", fmt.Errorf("no query provided")
+		return nil, fmt.Errorf("no query provided")
 	}
 
 	// Build context with commits and their diffs
@@ -120,29 +133,64 @@ func GenerateFromQuery(query string, commits []git.Commit) (string, error) {
 		context.WriteString("\n")
 	}
 
-	context.WriteString("\nBased on the above commits and the user's query, write a short, engaging post for X (formerly Twitter). ")
-	context.WriteString("Keep it under 280 characters. Be concise and insightful. ")
-	context.WriteString("Don't use hashtags unless they're really relevant. Sound natural, not promotional.\n\n")
-	context.WriteString("Write only the post text, nothing else:")
+	context.WriteString("\nCRITICAL RULES:\n")
+	context.WriteString("- EACH post MUST be UNDER 280 characters - this is a hard limit, count carefully!\n")
+	context.WriteString("- NEVER cut off in the middle of a word - if you're close to 280, end the sentence earlier\n")
+	if allowThread {
+		context.WriteString("- If the content is rich enough, write a thread (2-4 posts)\n")
+		context.WriteString("- If a single post works, that's fine too\n")
+	} else {
+		context.WriteString("- Write exactly ONE post, not a thread\n")
+	}
+	context.WriteString("- Be concise and insightful\n")
+	context.WriteString("- Don't use hashtags unless really relevant\n")
+	context.WriteString("- Sound natural, not promotional\n\n")
+	if allowThread {
+		context.WriteString("Write only the post text. If writing a thread, separate posts with ---\n")
+	} else {
+		context.WriteString("Write only the post text (one post, no thread).\n")
+	}
+	context.WriteString("Output:")
 
 	// Call claude CLI
 	cmd := exec.Command("claude", "-p", context.String())
 	output, err := cmd.Output()
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
-			return "", fmt.Errorf("claude error: %s", string(exitErr.Stderr))
+			return nil, fmt.Errorf("claude error: %s", string(exitErr.Stderr))
 		}
-		return "", fmt.Errorf("failed to run claude: %w", err)
+		return nil, fmt.Errorf("failed to run claude: %w", err)
 	}
 
-	suggestion := strings.TrimSpace(string(output))
-	suggestion = strings.Trim(suggestion, "\"'")
-
-	return suggestion, nil
+	return parseThreadResponse(string(output)), nil
 }
 
 // IsClaudeAvailable checks if the claude CLI is installed and accessible
 func IsClaudeAvailable() bool {
 	_, err := exec.LookPath("claude")
 	return err == nil
+}
+
+// parseThreadResponse splits the AI response into individual posts
+func parseThreadResponse(output string) []string {
+	output = strings.TrimSpace(output)
+	output = strings.Trim(output, "\"'")
+
+	// Split by --- separator
+	parts := strings.Split(output, "---")
+
+	var posts []string
+	for _, part := range parts {
+		post := strings.TrimSpace(part)
+		if post != "" {
+			posts = append(posts, post)
+		}
+	}
+
+	// If no posts found, return the whole output as single post
+	if len(posts) == 0 {
+		return []string{output}
+	}
+
+	return posts
 }
