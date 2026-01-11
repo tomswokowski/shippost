@@ -109,6 +109,32 @@ func (c *Config) IsValid() bool {
 	return c.APIKey != "" && c.APISecret != "" && c.AccessToken != "" && c.AccessSecret != ""
 }
 
+// Cleanup removes the config file and directory
+func Cleanup() error {
+	path, err := configPath()
+	if err != nil {
+		return err
+	}
+
+	// Check if config exists
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		fmt.Println("No config found - nothing to clean up")
+		return nil
+	}
+
+	// Remove config file
+	if err := os.Remove(path); err != nil {
+		return fmt.Errorf("failed to remove config: %w", err)
+	}
+
+	// Try to remove config directory (will fail if not empty, which is fine)
+	dir := filepath.Dir(path)
+	os.Remove(dir) // ignore error - dir might have other files
+
+	fmt.Println("Credentials removed successfully")
+	return nil
+}
+
 // RunSetup interactively prompts for credentials
 func RunSetup() error {
 	fmt.Println("shippost setup")

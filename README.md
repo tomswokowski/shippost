@@ -80,6 +80,9 @@ shippost
 # Configure credentials
 shippost --setup
 
+# Remove stored credentials
+shippost --cleanup
+
 # Show help
 shippost --help
 ```

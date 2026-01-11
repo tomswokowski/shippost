@@ -15,6 +15,7 @@ var version = "dev"
 func main() {
 	// Define flags
 	setup := flag.Bool("setup", false, "Configure X API credentials")
+	cleanup := flag.Bool("cleanup", false, "Remove stored credentials")
 	showVersion := flag.Bool("version", false, "Show version")
 	help := flag.Bool("help", false, "Show help")
 
@@ -29,6 +30,14 @@ func main() {
 
 	if *help {
 		printUsage()
+		return
+	}
+
+	if *cleanup {
+		if err := config.Cleanup(); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
 		return
 	}
 
@@ -53,6 +62,7 @@ func printUsage() {
 	fmt.Println("Usage:")
 	fmt.Println("  shippost            Launch the app")
 	fmt.Println("  shippost --setup    Configure X API credentials")
+	fmt.Println("  shippost --cleanup  Remove stored credentials")
 	fmt.Println("  shippost --version  Show version")
 	fmt.Println("  shippost --help     Show this help")
 }
