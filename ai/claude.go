@@ -105,14 +105,15 @@ func writePromptRules(b *strings.Builder, allowThread bool) {
 
 // writeOutputFormat writes the output format instructions
 func writeOutputFormat(b *strings.Builder, allowThread bool) {
+	b.WriteString("OUTPUT FORMAT:\n")
+	b.WriteString("- Output ONLY the exact tweet text, nothing else\n")
+	b.WriteString("- Do NOT include any preamble, explanation, or meta-commentary\n")
+	b.WriteString("- Do NOT say things like \"Here's a tweet\" or \"I'll write about...\"\n")
+	b.WriteString("- Just output the tweet content directly\n")
 	if allowThread {
-		b.WriteString("Write only the post text. If writing a thread, separate posts with ---\n")
-		b.WriteString("Example thread format:\n")
-		b.WriteString("First post here\n---\nSecond post here\n---\nThird post here\n\n")
-	} else {
-		b.WriteString("Write only the post text (one post, no thread).\n\n")
+		b.WriteString("- If writing a thread, separate posts with --- on its own line\n")
 	}
-	b.WriteString("Output:")
+	b.WriteString("\nTweet:")
 }
 
 // runClaude executes the claude CLI and parses the response
