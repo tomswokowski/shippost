@@ -2,25 +2,35 @@ package tui
 
 import "github.com/charmbracelet/lipgloss"
 
-// ANSI color constants - these use the terminal's color palette
-// so they automatically match whatever theme the user has
-const (
-	ansiBlack        = lipgloss.Color("0")
-	ansiRed          = lipgloss.Color("1")
-	ansiGreen        = lipgloss.Color("2")
-	ansiYellow       = lipgloss.Color("3")
-	ansiBlue         = lipgloss.Color("4")
-	ansiMagenta      = lipgloss.Color("5")
-	ansiCyan         = lipgloss.Color("6")
-	ansiWhite        = lipgloss.Color("7")
-	ansiBrightBlack  = lipgloss.Color("8")
-	ansiBrightRed    = lipgloss.Color("9")
-	ansiBrightGreen  = lipgloss.Color("10")
-	ansiBrightYellow = lipgloss.Color("11")
-	ansiBrightBlue   = lipgloss.Color("12")
-	ansiBrightMagenta = lipgloss.Color("13")
-	ansiBrightCyan   = lipgloss.Color("14")
-	ansiBrightWhite  = lipgloss.Color("15")
+// Adaptive colors - automatically pick light/dark variant based on terminal background
+var (
+	colorTitle        = lipgloss.AdaptiveColor{Light: "#DC2626", Dark: "#FF6B6B"}
+	colorTagline      = lipgloss.AdaptiveColor{Light: "#6B7280", Dark: "#6B7280"}
+	colorSubtitle     = lipgloss.AdaptiveColor{Light: "#1F2937", Dark: "#E2E8F0"}
+	colorText         = lipgloss.AdaptiveColor{Light: "#1F2937", Dark: "#E2E8F0"}
+	colorDim          = lipgloss.AdaptiveColor{Light: "#6B7280", Dark: "#64748B"}
+	colorDimmer       = lipgloss.AdaptiveColor{Light: "#9CA3AF", Dark: "#475569"}
+	colorSelected     = lipgloss.AdaptiveColor{Light: "#B45309", Dark: "#FFE66D"}
+	colorSelectedDesc = lipgloss.AdaptiveColor{Light: "#7C3AED", Dark: "#A78BFA"}
+	colorBullet       = lipgloss.AdaptiveColor{Light: "#DC2626", Dark: "#FF6B6B"}
+	colorBorder       = lipgloss.AdaptiveColor{Light: "#D1D5DB", Dark: "#334155"}
+	colorBorderActive = lipgloss.AdaptiveColor{Light: "#0D9488", Dark: "#4ECDC4"}
+	colorHelpKey      = lipgloss.AdaptiveColor{Light: "#FFFFFF", Dark: "#0C4A6E"}
+	colorHelpKeyBg    = lipgloss.AdaptiveColor{Light: "#2563EB", Dark: "#0EA5E9"}
+	colorSuccess      = lipgloss.AdaptiveColor{Light: "#059669", Dark: "#10B981"}
+	colorError        = lipgloss.AdaptiveColor{Light: "#DC2626", Dark: "#EF4444"}
+	colorWarning      = lipgloss.AdaptiveColor{Light: "#D97706", Dark: "#F59E0B"}
+	colorURL          = lipgloss.AdaptiveColor{Light: "#2563EB", Dark: "#60A5FA"}
+	colorMediaTag     = lipgloss.AdaptiveColor{Light: "#FFFFFF", Dark: "#10B981"}
+	colorMediaTagBg   = lipgloss.AdaptiveColor{Light: "#059669", Dark: "#064E3B"}
+	colorThreadNum    = lipgloss.AdaptiveColor{Light: "#FFFFFF", Dark: "#6366F1"}
+	colorThreadNumBg  = lipgloss.AdaptiveColor{Light: "#4F46E5", Dark: "#312E81"}
+	colorCommitHash   = lipgloss.AdaptiveColor{Light: "#059669", Dark: "#95E6CB"}
+	colorCommitTime   = lipgloss.AdaptiveColor{Light: "#7C3AED", Dark: "#A78BFA"}
+	colorAITag        = lipgloss.AdaptiveColor{Light: "#FFFFFF", Dark: "#F472B6"}
+	colorAITagBg      = lipgloss.AdaptiveColor{Light: "#DB2777", Dark: "#831843"}
+	colorInputLabel   = lipgloss.AdaptiveColor{Light: "#4B5563", Dark: "#94A3B8"}
+	colorDisabledBg   = lipgloss.AdaptiveColor{Light: "#F3F4F6", Dark: "#1E293B"}
 )
 
 // Style variables
@@ -62,116 +72,117 @@ func init() {
 func initStyles() {
 	titleStyle = lipgloss.NewStyle().
 		Bold(true).
-		Foreground(ansiBrightRed)
+		Foreground(colorTitle)
 
 	taglineStyle = lipgloss.NewStyle().
-		Foreground(ansiBrightBlack).
+		Foreground(colorTagline).
 		Italic(true)
 
 	subtitleStyle = lipgloss.NewStyle().
-		Foreground(ansiBrightWhite).
+		Foreground(colorSubtitle).
 		Bold(true)
 
 	menuItemStyle = lipgloss.NewStyle().
-		Foreground(ansiWhite)
+		Foreground(colorText)
 
 	menuDescStyle = lipgloss.NewStyle().
-		Foreground(ansiBrightBlack).
+		Foreground(colorDim).
 		PaddingLeft(4)
 
 	selectedStyle = lipgloss.NewStyle().
-		Foreground(ansiBrightYellow).
+		Foreground(colorSelected).
 		Bold(true)
 
 	selectedDescStyle = lipgloss.NewStyle().
-		Foreground(ansiMagenta).
+		Foreground(colorSelectedDesc).
 		PaddingLeft(4)
 
 	bulletStyle = lipgloss.NewStyle().
-		Foreground(ansiBrightRed).
+		Foreground(colorBullet).
 		Bold(true)
 
 	dimBulletStyle = lipgloss.NewStyle().
-		Foreground(ansiBrightBlack)
+		Foreground(colorDimmer)
 
 	disabledStyle = lipgloss.NewStyle().
-		Foreground(ansiBrightBlack)
+		Foreground(colorDimmer)
 
 	disabledTagStyle = lipgloss.NewStyle().
-		Foreground(ansiBrightBlack).
+		Foreground(colorDimmer).
+		Background(colorDisabledBg).
 		Padding(0, 1)
 
 	disabledDescStyle = lipgloss.NewStyle().
-		Foreground(ansiBrightBlack).
+		Foreground(colorDimmer).
 		PaddingLeft(4)
 
 	helpBarStyle = lipgloss.NewStyle().
-		Foreground(ansiBrightBlack).
+		Foreground(colorDim).
 		Border(lipgloss.Border{Top: "─"}).
-		BorderForeground(ansiBrightBlack).
+		BorderForeground(colorBorder).
 		PaddingTop(1).
 		MarginTop(1)
 
 	helpKeyStyle = lipgloss.NewStyle().
-		Foreground(ansiBlack).
-		Background(ansiCyan).
+		Foreground(colorHelpKey).
+		Background(colorHelpKeyBg).
 		Padding(0, 1).
 		Bold(true)
 
 	helpTextStyle = lipgloss.NewStyle().
-		Foreground(ansiBrightBlack)
+		Foreground(colorDim)
 
 	statusStyle = lipgloss.NewStyle().
-		Foreground(ansiBrightGreen).
+		Foreground(colorSuccess).
 		Bold(true)
 
 	errorStyle = lipgloss.NewStyle().
-		Foreground(ansiBrightRed).
+		Foreground(colorError).
 		Bold(true)
 
 	warningStyle = lipgloss.NewStyle().
-		Foreground(ansiBrightYellow)
+		Foreground(colorWarning)
 
 	boxStyle = lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(ansiBrightBlack).
+		BorderForeground(colorBorder).
 		Padding(0, 1)
 
 	activeBoxStyle = lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(ansiBrightCyan).
+		BorderForeground(colorBorderActive).
 		Padding(0, 1)
 
 	urlStyle = lipgloss.NewStyle().
-		Foreground(ansiBrightBlue).
+		Foreground(colorURL).
 		Underline(true)
 
 	mediaTagStyle = lipgloss.NewStyle().
-		Foreground(ansiBlack).
-		Background(ansiGreen).
+		Foreground(colorMediaTag).
+		Background(colorMediaTagBg).
 		Padding(0, 1)
 
 	threadNumStyle = lipgloss.NewStyle().
-		Foreground(ansiBlack).
-		Background(ansiBlue).
+		Foreground(colorThreadNum).
+		Background(colorThreadNumBg).
 		Padding(0, 1).
 		Bold(true)
 
 	dimStyle = lipgloss.NewStyle().
-		Foreground(ansiBrightBlack)
+		Foreground(colorDim)
 
 	inputLabelStyle = lipgloss.NewStyle().
-		Foreground(ansiWhite)
+		Foreground(colorInputLabel)
 
 	commitHashStyle = lipgloss.NewStyle().
-		Foreground(ansiBrightGreen)
+		Foreground(colorCommitHash)
 
 	commitTimeStyle = lipgloss.NewStyle().
-		Foreground(ansiBrightMagenta)
+		Foreground(colorCommitTime)
 
 	aiTagStyle = lipgloss.NewStyle().
-		Foreground(ansiBlack).
-		Background(ansiMagenta).
+		Foreground(colorAITag).
+		Background(colorAITagBg).
 		Padding(0, 1).
 		Bold(true)
 }
