@@ -293,7 +293,7 @@ func (m Model) viewCommitBrowser(b *strings.Builder) {
 		{"/", searchHelp},
 		{"tab", "prompt"},
 		{"ctrl+t", "single/thread"},
-		{"enter", "generate"},
+		{"ctrl+g", "generate"},
 		{"esc", "back"},
 	}))
 }

@@ -511,7 +511,7 @@ func (m Model) handleCommitBrowserKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.selectedCommits = append(m.selectedCommits, realIdx)
 			}
 		}
-	case "enter":
+	case "enter", "ctrl+g":
 		if m.commitSearchActive {
 			m.commitSearchActive = false
 			return m, nil

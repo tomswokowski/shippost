@@ -110,7 +110,7 @@ shippost --help
 - `/` - Search commits
 - `Tab` - Focus prompt input
 - `ctrl+t` - Toggle single/thread mode
-- `Enter` - Generate post
+- `ctrl+g` - Generate post
 
 **Smart Post (Ask Mode):**
 - `ctrl+g` - Generate post
