@@ -352,10 +352,11 @@ func (m Model) viewCompose(b *strings.Builder, isSmartPost bool) {
 
 	// Media tags
 	if len(m.thread[m.currentPost].media) > 0 {
-		b.WriteString("  ")
-		for _, path := range m.thread[m.currentPost].media {
-			b.WriteString(mediaTagStyle.Render(" 📎 " + filepath.Base(path) + " "))
-			b.WriteString(" ")
+		b.WriteString("\n")
+		for i, path := range m.thread[m.currentPost].media {
+			b.WriteString("  ")
+			b.WriteString(mediaTagStyle.Render(fmt.Sprintf(" 📎 %d. %s ", i+1, filepath.Base(path))))
+			b.WriteString("\n")
 		}
 	}
 

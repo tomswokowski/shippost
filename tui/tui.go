@@ -596,6 +596,10 @@ func (m Model) handleComposeKeys(msg tea.KeyMsg, isSmartPost bool) (tea.Model, t
 		}
 
 	case "ctrl+o":
+		if len(m.thread[m.currentPost].media) >= 4 {
+			m.err = fmt.Errorf("maximum 4 images per post")
+			return m, nil
+		}
 		m.thread[m.currentPost].text = m.textarea.Value()
 		m.state = stateMediaInput
 		m.pathInput.SetValue("")
