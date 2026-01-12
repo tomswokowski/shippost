@@ -255,6 +255,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 		m.textarea.SetWidth(min(60, msg.Width-4))
+		return m, tea.ClearScreen
 	}
 
 	return m, tea.Batch(cmds...)
