@@ -64,8 +64,8 @@ Built with [Bubbletea](https://github.com/charmbracelet/bubbletea) and [Lipgloss
 - `a` - Toggle select all (works with filtered results)
 
 **Theme Detection:**
-- `lipgloss.HasDarkBackground()` auto-detects terminal theme
-- Two complete color palettes (dark/light) in `styles.go`
+- Uses `lipgloss.AdaptiveColor` which automatically picks light/dark colors
+- Colors defined once with both variants, lipgloss handles detection
 
 **Terminal Size:**
 - Minimum: 128×30 characters (shows warning if smaller)
