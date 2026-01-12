@@ -209,7 +209,8 @@ func (m Model) viewCommitBrowser(b *strings.Builder) {
 	} else {
 		// Show scroll indicator if there are more commits above
 		if m.commitScrollOffset > 0 {
-			b.WriteString(dimStyle.Render(fmt.Sprintf("  ↑ %d more above\n", m.commitScrollOffset)))
+			b.WriteString(dimStyle.Render(fmt.Sprintf("    ↑ %d more above", m.commitScrollOffset)))
+			b.WriteString("\n")
 		}
 
 		// Show visible window of commits
@@ -255,7 +256,8 @@ func (m Model) viewCommitBrowser(b *strings.Builder) {
 		// Show scroll indicator if there are more commits below
 		remaining := len(m.filteredCommits) - end
 		if remaining > 0 {
-			b.WriteString(dimStyle.Render(fmt.Sprintf("  ↓ %d more below\n", remaining)))
+			b.WriteString(dimStyle.Render(fmt.Sprintf("    ↓ %d more below", remaining)))
+			b.WriteString("\n")
 		}
 
 		if len(m.selectedCommits) > 0 {
