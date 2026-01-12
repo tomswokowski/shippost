@@ -7,8 +7,21 @@ import (
 	"unicode/utf8"
 )
 
+const (
+	minTerminalHeight = 20
+	minTerminalWidth  = 60
+)
+
 // View renders the current state of the TUI
 func (m Model) View() string {
+	// Check for minimum terminal size
+	if m.height > 0 && m.height < minTerminalHeight {
+		return m.viewTooSmall()
+	}
+	if m.width > 0 && m.width < minTerminalWidth {
+		return m.viewTooSmall()
+	}
+
 	var b strings.Builder
 
 	b.WriteString(titleStyle.Render("shippost"))
@@ -37,6 +50,18 @@ func (m Model) View() string {
 		m.viewPosted(&b)
 	}
 
+	return b.String()
+}
+
+func (m Model) viewTooSmall() string {
+	var b strings.Builder
+	b.WriteString(titleStyle.Render("shippost"))
+	b.WriteString("\n\n")
+	b.WriteString(warningStyle.Render("Terminal too small"))
+	b.WriteString("\n\n")
+	b.WriteString(dimStyle.Render(fmt.Sprintf("Please resize to at least %d×%d", minTerminalWidth, minTerminalHeight)))
+	b.WriteString("\n")
+	b.WriteString(dimStyle.Render(fmt.Sprintf("Current size: %d×%d", m.width, m.height)))
 	return b.String()
 }
 
@@ -149,7 +174,7 @@ func (m Model) viewAskInput(b *strings.Builder) {
 }
 
 func (m Model) viewCommitBrowser(b *strings.Builder) {
-	const maxVisible = 8
+	maxVisible := m.commitListMaxVisible()
 
 	b.WriteString(subtitleStyle.Render("Smart Post"))
 	b.WriteString("  ")

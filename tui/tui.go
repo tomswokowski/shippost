@@ -366,7 +366,7 @@ func (m Model) handleAskInputKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) handleCommitBrowserKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	const maxVisible = 8
+	maxVisible := m.commitListMaxVisible()
 
 	switch msg.String() {
 	case "esc":
@@ -737,6 +737,19 @@ func (m Model) hasContent() bool {
 		}
 	}
 	return strings.TrimSpace(m.textarea.Value()) != ""
+}
+
+// commitListMaxVisible calculates how many commits to show based on terminal height
+func (m Model) commitListMaxVisible() int {
+	if m.height <= 0 {
+		return 8 // default
+	}
+	// Reserve ~17 lines for fixed UI elements
+	available := m.height - 17
+	if available > 3 {
+		return available
+	}
+	return 3 // minimum
 }
 
 // Run starts the TUI
