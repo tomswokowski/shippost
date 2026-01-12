@@ -223,6 +223,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.thread[m.currentPost].mediaIDs = append(m.thread[m.currentPost].mediaIDs, msg.mediaID)
 			m.thread[m.currentPost].media = append(m.thread[m.currentPost].media, msg.path)
 			m.status = ""
+			m.err = nil
 		}
 		if m.isSmartPost {
 			m.state = stateSmartCompose
@@ -678,7 +679,7 @@ func (m Model) handleMediaInputKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.textarea.Focus()
 		return m, textarea.Blink
 	case "enter":
-		path := m.pathInput.Value()
+		path := strings.TrimSpace(m.pathInput.Value())
 		if path == "" {
 			if m.isSmartPost {
 				m.state = stateSmartCompose
