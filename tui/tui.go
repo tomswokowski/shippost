@@ -689,6 +689,9 @@ func (m Model) handleMediaInputKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.textarea.Focus()
 			return m, textarea.Blink
 		}
+		// Clean up paths from drag-and-drop (escaped spaces, quotes)
+		path = strings.ReplaceAll(path, "\\ ", " ")
+		path = strings.Trim(path, "'\"")
 		if strings.HasPrefix(path, "~/") {
 			home, _ := os.UserHomeDir()
 			path = filepath.Join(home, path[2:])
