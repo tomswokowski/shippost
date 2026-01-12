@@ -524,9 +524,9 @@ func (m Model) composeHelpItems(isSmartPost bool) []helpItem {
 	if len(m.thread) > 1 {
 		items = append(items, helpItem{"ctrl+d", "delete"})
 		if isSmartPost {
-			items = append(items, helpItem{"ctrl+←→", "nav"})
+			items = append(items, helpItem{"ctrl+p/]", "nav"})
 		} else {
-			items = append(items, helpItem{"ctrl+↑↓", "nav"})
+			items = append(items, helpItem{"ctrl+j/k", "nav"})
 		}
 	}
 	items = append(items, helpItem{"esc", "back"})
