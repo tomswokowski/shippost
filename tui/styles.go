@@ -2,7 +2,28 @@ package tui
 
 import "github.com/charmbracelet/lipgloss"
 
-// Style variables - initialized in init() based on terminal theme
+// ANSI color constants - these use the terminal's color palette
+// so they automatically match whatever theme the user has
+const (
+	ansiBlack        = lipgloss.Color("0")
+	ansiRed          = lipgloss.Color("1")
+	ansiGreen        = lipgloss.Color("2")
+	ansiYellow       = lipgloss.Color("3")
+	ansiBlue         = lipgloss.Color("4")
+	ansiMagenta      = lipgloss.Color("5")
+	ansiCyan         = lipgloss.Color("6")
+	ansiWhite        = lipgloss.Color("7")
+	ansiBrightBlack  = lipgloss.Color("8")
+	ansiBrightRed    = lipgloss.Color("9")
+	ansiBrightGreen  = lipgloss.Color("10")
+	ansiBrightYellow = lipgloss.Color("11")
+	ansiBrightBlue   = lipgloss.Color("12")
+	ansiBrightMagenta = lipgloss.Color("13")
+	ansiBrightCyan   = lipgloss.Color("14")
+	ansiBrightWhite  = lipgloss.Color("15")
+)
+
+// Style variables
 var (
 	titleStyle        lipgloss.Style
 	taglineStyle      lipgloss.Style
@@ -35,250 +56,122 @@ var (
 )
 
 func init() {
-	isDark := lipgloss.HasDarkBackground()
-	initStyles(isDark)
+	initStyles()
 }
 
-func initStyles(isDark bool) {
-	if isDark {
-		initDarkStyles()
-	} else {
-		initLightStyles()
-	}
-}
-
-func initDarkStyles() {
+func initStyles() {
 	titleStyle = lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("#FF6B6B"))
+		Foreground(ansiBrightRed)
 
 	taglineStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#6B7280")).
+		Foreground(ansiBrightBlack).
 		Italic(true)
 
 	subtitleStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#E2E8F0")).
+		Foreground(ansiBrightWhite).
 		Bold(true)
 
 	menuItemStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#E2E8F0"))
+		Foreground(ansiWhite)
 
 	menuDescStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#64748B")).
+		Foreground(ansiBrightBlack).
 		PaddingLeft(4)
 
 	selectedStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#FFE66D")).
+		Foreground(ansiBrightYellow).
 		Bold(true)
 
 	selectedDescStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#A78BFA")).
+		Foreground(ansiMagenta).
 		PaddingLeft(4)
 
 	bulletStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#FF6B6B")).
+		Foreground(ansiBrightRed).
 		Bold(true)
 
 	dimBulletStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#475569"))
+		Foreground(ansiBrightBlack)
 
 	disabledStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#475569"))
+		Foreground(ansiBrightBlack)
 
 	disabledTagStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#334155")).
-		Background(lipgloss.Color("#1E293B")).
+		Foreground(ansiBrightBlack).
 		Padding(0, 1)
 
 	disabledDescStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#334155")).
+		Foreground(ansiBrightBlack).
 		PaddingLeft(4)
 
 	helpBarStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#64748B")).
+		Foreground(ansiBrightBlack).
 		Border(lipgloss.Border{Top: "─"}).
-		BorderForeground(lipgloss.Color("#334155")).
+		BorderForeground(ansiBrightBlack).
 		PaddingTop(1).
 		MarginTop(1)
 
 	helpKeyStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#0EA5E9")).
-		Background(lipgloss.Color("#0C4A6E")).
+		Foreground(ansiBlack).
+		Background(ansiCyan).
 		Padding(0, 1).
 		Bold(true)
 
 	helpTextStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#64748B"))
+		Foreground(ansiBrightBlack)
 
 	statusStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#10B981")).
+		Foreground(ansiBrightGreen).
 		Bold(true)
 
 	errorStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#EF4444")).
+		Foreground(ansiBrightRed).
 		Bold(true)
 
 	warningStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#F59E0B"))
+		Foreground(ansiBrightYellow)
 
 	boxStyle = lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#334155")).
+		BorderForeground(ansiBrightBlack).
 		Padding(0, 1)
 
 	activeBoxStyle = lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#4ECDC4")).
+		BorderForeground(ansiBrightCyan).
 		Padding(0, 1)
 
 	urlStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#60A5FA")).
+		Foreground(ansiBrightBlue).
 		Underline(true)
 
 	mediaTagStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#10B981")).
-		Background(lipgloss.Color("#064E3B")).
+		Foreground(ansiBlack).
+		Background(ansiGreen).
 		Padding(0, 1)
 
 	threadNumStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#6366F1")).
-		Background(lipgloss.Color("#312E81")).
+		Foreground(ansiBlack).
+		Background(ansiBlue).
 		Padding(0, 1).
 		Bold(true)
 
 	dimStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#64748B"))
+		Foreground(ansiBrightBlack)
 
 	inputLabelStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#94A3B8"))
+		Foreground(ansiWhite)
 
 	commitHashStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#95E6CB"))
+		Foreground(ansiBrightGreen)
 
 	commitTimeStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#A78BFA"))
+		Foreground(ansiBrightMagenta)
 
 	aiTagStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#F472B6")).
-		Background(lipgloss.Color("#831843")).
-		Padding(0, 1).
-		Bold(true)
-}
-
-func initLightStyles() {
-	titleStyle = lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("#DC2626"))
-
-	taglineStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#6B7280")).
-		Italic(true)
-
-	subtitleStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#1F2937")).
-		Bold(true)
-
-	menuItemStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#1F2937"))
-
-	menuDescStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#6B7280")).
-		PaddingLeft(4)
-
-	selectedStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#B45309")).
-		Bold(true)
-
-	selectedDescStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#7C3AED")).
-		PaddingLeft(4)
-
-	bulletStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#DC2626")).
-		Bold(true)
-
-	dimBulletStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#9CA3AF"))
-
-	disabledStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#9CA3AF"))
-
-	disabledTagStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#9CA3AF")).
-		Background(lipgloss.Color("#F3F4F6")).
-		Padding(0, 1)
-
-	disabledDescStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#9CA3AF")).
-		PaddingLeft(4)
-
-	helpBarStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#6B7280")).
-		Border(lipgloss.Border{Top: "─"}).
-		BorderForeground(lipgloss.Color("#D1D5DB")).
-		PaddingTop(1).
-		MarginTop(1)
-
-	helpKeyStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#FFFFFF")).
-		Background(lipgloss.Color("#2563EB")).
-		Padding(0, 1).
-		Bold(true)
-
-	helpTextStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#6B7280"))
-
-	statusStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#059669")).
-		Bold(true)
-
-	errorStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#DC2626")).
-		Bold(true)
-
-	warningStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#D97706"))
-
-	boxStyle = lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#D1D5DB")).
-		Padding(0, 1)
-
-	activeBoxStyle = lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#0D9488")).
-		Padding(0, 1)
-
-	urlStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#2563EB")).
-		Underline(true)
-
-	mediaTagStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#FFFFFF")).
-		Background(lipgloss.Color("#059669")).
-		Padding(0, 1)
-
-	threadNumStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#FFFFFF")).
-		Background(lipgloss.Color("#4F46E5")).
-		Padding(0, 1).
-		Bold(true)
-
-	dimStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#6B7280"))
-
-	inputLabelStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#4B5563"))
-
-	commitHashStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#059669"))
-
-	commitTimeStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#7C3AED"))
-
-	aiTagStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#FFFFFF")).
-		Background(lipgloss.Color("#DB2777")).
+		Foreground(ansiBlack).
+		Background(ansiMagenta).
 		Padding(0, 1).
 		Bold(true)
 }
