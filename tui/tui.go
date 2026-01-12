@@ -625,7 +625,7 @@ func (m Model) handleComposeKeys(msg tea.KeyMsg, isSmartPost bool) (tea.Model, t
 		}
 		return m, nil
 
-	case "ctrl+left", "ctrl+p":
+	case "ctrl+left", "ctrl+b":
 		if isSmartPost && m.currentPost > 0 {
 			m.thread[m.currentPost].text = m.textarea.Value()
 			m.currentPost--
@@ -633,7 +633,7 @@ func (m Model) handleComposeKeys(msg tea.KeyMsg, isSmartPost bool) (tea.Model, t
 		}
 		return m, nil
 
-	case "ctrl+right", "ctrl+]":
+	case "ctrl+right", "ctrl+f":
 		if isSmartPost && m.currentPost < len(m.thread)-1 {
 			m.thread[m.currentPost].text = m.textarea.Value()
 			m.currentPost++

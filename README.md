@@ -100,7 +100,7 @@ shippost --help
 - `ctrl+o` - Attach image
 - `ctrl+n` - Add post to thread
 - `ctrl+d` - Delete post from thread
-- `ctrl+j/k` - Navigate thread (Mac-friendly)
+- `ctrl+j/k` - Navigate thread
 - `esc` - Back
 
 **Smart Post (Browse Commits):**
@@ -120,7 +120,7 @@ shippost --help
 - `ctrl+s` - Send
 - `ctrl+r` - Regenerate
 - `ctrl+n` - Add post
-- `ctrl+p/]` - Navigate thread (Mac-friendly)
+- `ctrl+b/f` - Navigate thread
 
 ## Security
 
