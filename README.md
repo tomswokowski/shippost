@@ -113,7 +113,7 @@ shippost --help
 - `Enter` - Generate post
 
 **Smart Post (Ask Mode):**
-- `ctrl+enter` - Submit question
+- `ctrl+g` - Generate post
 - `esc` - Back
 
 **Smart Post (Compose):**

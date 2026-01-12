@@ -346,7 +346,7 @@ func (m Model) handleAskInputKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.askInput.Blur()
 		m.err = nil
 		return m, nil
-	case "ctrl+enter":
+	case "ctrl+enter", "ctrl+g":
 		query := m.askInput.Value()
 		if query == "" {
 			m.err = fmt.Errorf("please enter a query")

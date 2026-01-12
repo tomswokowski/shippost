@@ -168,7 +168,7 @@ func (m Model) viewAskInput(b *strings.Builder) {
 	b.WriteString("\n\n")
 
 	b.WriteString(m.renderHelpBar([]helpItem{
-		{"ctrl+enter", "generate"},
+		{"ctrl+g", "generate"},
 		{"ctrl+t", "single/thread"},
 		{"esc", "back"},
 	}))
