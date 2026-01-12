@@ -106,6 +106,7 @@ shippost --help
 **Smart Post (Browse Commits):**
 - `↑/↓` - Navigate commits
 - `Space` - Select/deselect commit
+- `a` - Select/deselect all commits
 - `/` - Search commits
 - `Tab` - Focus prompt input
 - `ctrl+t` - Toggle single/thread mode
@@ -133,6 +134,7 @@ shippost --help
 - X API credentials (Free tier available)
 - Claude Code CLI (optional, for Smart Post features)
 - Git repository (optional, for Smart Post features)
+- Terminal size: minimum 128×30 characters
 
 ## License
 

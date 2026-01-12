@@ -8,8 +8,9 @@ import (
 )
 
 const (
-	minTerminalHeight = 20
-	minTerminalWidth  = 60
+	minTerminalHeight = 30
+	minTerminalWidth  = 128
+	maxVisibleCommits = 5
 )
 
 // View renders the current state of the TUI
@@ -174,7 +175,7 @@ func (m Model) viewAskInput(b *strings.Builder) {
 }
 
 func (m Model) viewCommitBrowser(b *strings.Builder) {
-	maxVisible := m.commitListMaxVisible()
+	maxVisible := maxVisibleCommits
 
 	b.WriteString(subtitleStyle.Render("Smart Post"))
 	b.WriteString("  ")
@@ -286,6 +287,7 @@ func (m Model) viewCommitBrowser(b *strings.Builder) {
 	b.WriteString(m.renderHelpBar([]helpItem{
 		{"↑↓", "navigate"},
 		{"space", "select"},
+		{"a", "all"},
 		{"/", searchHelp},
 		{"tab", "prompt"},
 		{"ctrl+t", "single/thread"},

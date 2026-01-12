@@ -59,9 +59,17 @@ Built with [Bubbletea](https://github.com/charmbracelet/bubbletea) and [Lipgloss
 - `selectedCommits []int` - Multi-select indices for Browse mode
 - `allowThread bool` - Single post vs thread toggle
 
+**Commit Browser Keys:**
+- `space` - Toggle single commit selection
+- `a` - Toggle select all (works with filtered results)
+
 **Theme Detection:**
 - `lipgloss.HasDarkBackground()` auto-detects terminal theme
 - Two complete color palettes (dark/light) in `styles.go`
+
+**Terminal Size:**
+- Minimum: 128×30 characters (shows warning if smaller)
+- Commit browser shows 5 commits at a time (scrollable, loads 50 total)
 
 ### X Client (x/client.go)
 
